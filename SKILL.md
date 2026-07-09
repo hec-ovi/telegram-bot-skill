@@ -97,6 +97,7 @@ BOT_NAME="My Agent" BOT_DESCRIPTION="What this bot does" BOT_ABOUT="short profil
 ## If something fails
 
 - Telegram answers 401: bad or revoked token. Redo steps 1 to 3.
+- "Is the bridge online?" Check where it runs: the process, or `docker compose ps bot` in the docker rig. From Telegram's side, `curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates"` returning a 409 conflict proves a bridge is polling; a normal reply proves nothing (and the probe may briefly bump the real bridge, which recovers by itself). Never look for the process from inside a different container.
 - The bot never replies: check the bridge process is still running and the machine has internet. No ports or public IP are needed.
 - A non-owner gets "cannot enforce per-tier tool limits": expected until per-tier enforcement ships (phase 6); only the owner can run the agent for now.
 

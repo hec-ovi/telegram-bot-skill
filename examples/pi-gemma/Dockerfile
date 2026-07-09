@@ -1,7 +1,7 @@
 FROM node:24-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl git \
+    && apt-get install -y --no-install-recommends ca-certificates curl git procps \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 
