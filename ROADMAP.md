@@ -30,10 +30,11 @@ Tests: a fake `claude` executable as fixture, no network.
 `src/presence`: typing action re-sent about every 4.5s while a run lives, one status message edited in place (at least 1.5s between edits, honors `retry_after`), tool activity shown ("running a command", "editing bot.ts"), final answer as a separate message, explicit resolution on the status message. Hard timeout with a failure state that says so.
 Tests: fake adapter plus fake Bot API, assert the exact effect sequence including the timeout path.
 
-## Phase 5: access gate
+## Phase 5: access gate (done)
 
 `src/gate` and `src/store`. Identity is the numeric Telegram user id. Tiers: owner, trusted, guest, blocked, plus a pending state. Unknown user: stored pending, gets a neutral "waiting for approval" reply, owner gets Approve/Deny + tier picker inline keyboard, decision notifies the user. Owner bootstrap: first launch prints a one-time claim deep link (`t.me/BOT?start=CODE`), first valid claim becomes owner.
 Tests: end-to-end update-to-decision flows, including hostile cases: wrong claim code, double claim, blocked user, callback forgery.
+Pulled forward into this phase: the runner (per-chat queue, session persistence, capability refusal), the runnable entry (`npm start`), and a first SKILL.md so a CLI agent can guide the whole setup, including creating the bot token through BotFather for users who do not have one.
 
 ## Phase 6: tier policy enforcement
 
