@@ -31,16 +31,9 @@ It exists to fix the three things that make agent-over-chat setups painful:
 - **Strangers are all-or-nothing.** Here unknown users land in a pending queue, you get Approve / Guest / Block buttons, and everyone lives in a tier: owner, trusted, guest, blocked.
 - **"The prompt says no" is not security.** Tiers map to the agent harness's own config (permission rules, hooks), so a denied tool stays denied no matter what a chat user talks the model into. Adapters that cannot enforce this honestly declare it, and the bridge refuses to route non-owner traffic through them.
 
-```mermaid
-flowchart LR
-    TG(("Telegram")) --> T["telegram<br>long poll, flood control"]
-    T --> G{"gate<br>deterministic, no AI"}
-    G -- "stranger" --> O["owner approves<br>inline buttons"]
-    G -- "allow(tier)" --> R["runner<br>per-chat queue, sessions"]
-    R --> A["adapter<br>claude code | opencode | codex"]
-    A -- "events" --> P["presence<br>typing, status, answer"]
-    P --> TG
-```
+### <a href="https://hec-ovi.github.io/telegram-bot-skill/">🗺️ Explore the interactive architecture map →</a>
+
+A pannable blueprint of the whole pipeline: every module, its in/out contract, its status, and a link into its source, on one screen.
 
 ## Run it
 

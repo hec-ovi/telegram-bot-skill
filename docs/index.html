@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1017">
+<title>telegram-bot-skill · architecture map</title>
+<meta name="description" content="Interactive architecture map of telegram-bot-skill: the zero-dependency bridge between Telegram and local CLI coding agents.">
+<style>
+:root{
+  --bg:#0a1017; --surface:#101a26; --surface-2:#14212f; --surface-3:#192a3b;
+  --line:#24384c; --line-soft:#182a3b; --text:#eef5fa; --muted:#9db4c6; --faint:#647e97;
+  --blue:#26a5e4; --blue-soft:#5cc3f5; --steel:#6ea8dc; --cyan:#3fd0d4; --green:#3fb98a; --amber:#e0a84a;
+  --shadow:rgba(0,0,0,.55);
+  --sans:ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--sans);
+  font-size:13px; line-height:1.55; overflow:hidden; -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(38,165,228,.3)}
+a{color:var(--blue); text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--blue); outline-offset:2px; border-radius:4px}
+
+#app{position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr}
+
+/* ---------- header ---------- */
+header{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:12px 20px; border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#101a26,#0c141d);
+}
+.eyebrow{font-family:var(--mono); font-size:10.5px; letter-spacing:.3em; font-weight:700; color:var(--blue); text-transform:uppercase}
+header h1{margin:2px 0 0; font-size:16px; font-weight:650; letter-spacing:-.01em}
+header nav{display:flex; gap:14px; font-size:12px; font-family:var(--mono); flex-wrap:wrap}
+header nav a{color:var(--muted)}
+header nav a:hover{color:var(--text)}
+
+/* ---------- stage ---------- */
+#stage{
+  position:relative; min-height:0; overflow:hidden;
+  background:
+    linear-gradient(var(--line-soft) 1px, transparent 1px) 0 0/36px 36px,
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px) 0 0/36px 36px,
+    radial-gradient(1100px 600px at 75% -10%, rgba(38,165,228,.07), transparent 60%),
+    var(--bg);
+}
+#atlas{width:100%; height:100%; display:block; touch-action:none; cursor:grab}
+#atlas.grabbing{cursor:grabbing}
+
+.nbox{fill:var(--surface-2); stroke:var(--line); stroke-width:1.4; filter:drop-shadow(0 5px 12px var(--shadow))}
+.node{cursor:pointer}
+.node:hover .nbox,.node:focus-visible .nbox{stroke:var(--blue)}
+.node:focus-visible{outline:none}
+.node.planned .nbox{stroke-dasharray:5 4}
+.node.external .nbox{fill:var(--surface)}
+.nkind{font-size:10px; font-family:var(--mono); letter-spacing:.08em; text-transform:uppercase}
+.nlabel{fill:var(--text); font-weight:650; font-size:13.5px; font-family:var(--mono)}
+.nnote{fill:var(--faint); font-size:10.5px; font-family:var(--sans)}
+.edge{fill:none; stroke:var(--faint); stroke-width:1.6; opacity:.85}
+.edge.dashed{stroke-dasharray:5 4}
+.edge.amber{stroke:var(--amber)}
+.elabel{
+  fill:var(--muted); font-size:10px; font-family:var(--mono);
+  paint-order:stroke; stroke:var(--bg); stroke-width:5px; stroke-linejoin:round;
+}
+
+/* ---------- stage chrome ---------- */
+.legend{
+  position:absolute; left:14px; bottom:12px; display:flex; gap:12px; align-items:center;
+  font-family:var(--mono); font-size:10.5px; color:var(--faint);
+  background:rgba(10,16,23,.72); border:1px solid var(--line-soft); border-radius:9px; padding:6px 11px;
+}
+.legend .sw{display:inline-block; width:14px; height:9px; border-radius:3px; vertical-align:-1px; margin-right:5px; border:1.4px solid var(--steel); background:var(--surface-2)}
+.legend .sw.dash{border-style:dashed; border-color:var(--amber)}
+.legend .sw.ext{border-color:var(--faint)}
+.hint{
+  position:absolute; right:14px; bottom:12px; font-family:var(--mono); font-size:10.5px; color:var(--faint);
+  background:rgba(10,16,23,.72); border:1px solid var(--line-soft); border-radius:9px; padding:6px 11px;
+}
+.zoomer{position:absolute; right:14px; top:12px; display:flex; flex-direction:column; gap:6px}
+.zoomer button{
+  width:30px; height:30px; border-radius:8px; border:1px solid var(--line);
+  background:var(--surface-2); color:var(--text); font-size:15px; cursor:pointer; line-height:1;
+}
+.zoomer button:hover{border-color:var(--blue)}
+
+/* ---------- detail panel ---------- */
+#panel{
+  position:absolute; top:14px; left:14px; width:320px; max-width:calc(100% - 28px);
+  max-height:calc(100% - 28px); overflow-y:auto;
+  background:linear-gradient(180deg,#14212f,#101a26);
+  border:1px solid var(--line); border-radius:14px; padding:16px 16px 14px;
+  box-shadow:0 14px 40px var(--shadow);
+}
+#panel[hidden]{display:none}
+#panel .pkind{font-family:var(--mono); font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--blue)}
+#panel h3{margin:4px 0 8px; font-size:15.5px; font-family:var(--mono); letter-spacing:-.01em}
+.chip{
+  display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:.05em;
+  border-radius:99px; padding:2px 9px; border:1px solid var(--line); color:var(--muted); margin-bottom:9px;
+}
+.chip.live{color:var(--green); border-color:rgba(63,185,138,.4)}
+.chip.planned{color:var(--amber); border-color:rgba(224,168,74,.4)}
+#panel p{margin:0 0 11px; color:var(--muted); font-size:12.5px}
+.io{display:grid; grid-template-columns:36px 1fr; gap:8px; margin-bottom:6px}
+.ioLabel{font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); padding-top:2px}
+.ioVal{font-family:var(--mono); font-size:11px; color:var(--text)}
+.plinks{margin-top:11px; padding-top:10px; border-top:1px solid var(--line-soft); display:flex; gap:14px; flex-wrap:wrap}
+.plinks a{font-family:var(--mono); font-size:11px}
+#closePanel{
+  position:absolute; top:9px; right:9px; width:26px; height:26px; border-radius:7px;
+  border:1px solid transparent; background:transparent; color:var(--faint); font-size:15px; cursor:pointer;
+}
+#closePanel:hover{color:var(--text); border-color:var(--line)}
+
+@media (max-width:760px){
+  header{padding:10px 14px}
+  header nav{gap:10px}
+  #panel{
+    top:auto; left:0; right:0; bottom:0; width:auto; max-width:none;
+    border-radius:14px 14px 0 0; max-height:52%;
+  }
+  .legend{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div>
+    <div class="eyebrow">telegram-bot-skill</div>
+    <h1>architecture map</h1>
+  </div>
+  <nav>
+    <a href="https://github.com/hec-ovi/telegram-bot-skill">github</a>
+    <a href="https://github.com/hec-ovi/telegram-bot-skill/blob/main/ARCHITECTURE.md">contracts</a>
+    <a href="https://github.com/hec-ovi/telegram-bot-skill/blob/main/ROADMAP.md">roadmap</a>
+    <a href="https://github.com/hec-ovi/telegram-bot-skill/blob/main/SKILL.md">skill</a>
+  </nav>
+</header>
+<div id="stage">
+  <svg id="atlas" viewBox="0 20 1440 620" preserveAspectRatio="xMidYMid meet" aria-label="Module map of the bridge">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#647e97"></path>
+      </marker>
+      <marker id="arrAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#e0a84a"></path>
+      </marker>
+    </defs>
+    <g id="edges"></g>
+    <g id="nodes"></g>
+  </svg>
+  <div class="zoomer">
+    <button id="zin" title="zoom in" aria-label="zoom in">+</button>
+    <button id="zout" title="zoom out" aria-label="zoom out">−</button>
+    <button id="zfit" title="reset view" aria-label="reset view">⌂</button>
+  </div>
+  <div class="legend">
+    <span><span class="sw"></span>live</span>
+    <span><span class="sw dash"></span>planned</span>
+    <span><span class="sw ext"></span>external</span>
+  </div>
+  <div class="hint">drag to pan · scroll to zoom · click a module</div>
+  <aside id="panel" hidden>
+    <button id="closePanel" aria-label="close">×</button>
+    <div class="pkind" id="pKind"></div>
+    <h3 id="pTitle"></h3>
+    <span class="chip" id="pStatus"></span>
+    <p id="pDesc"></p>
+    <div class="io"><div class="ioLabel">in</div><div class="ioVal" id="pIn"></div></div>
+    <div class="io"><div class="ioLabel">out</div><div class="ioVal" id="pOut"></div></div>
+    <div class="plinks" id="pLinks"></div>
+  </aside>
+</div>
+</div>
+
+<script>
+const REPO = 'https://github.com/hec-ovi/telegram-bot-skill/blob/main/';
+
+const NODES = [
+  {
+    id:'tg', x:40, y:272, w:180, h:96, kind:'external', color:'#647e97', status:'external',
+    title:'Telegram', note:'official Bot API, HTTPS',
+    desc:"Telegram's own servers. The bridge speaks the official Bot API directly over Node's built-in fetch. Long polling means no public IP, no open ports, no certificates: it runs fine on a home rig.",
+    in:'sendMessage · editMessageText · sendChatAction · answerCallbackQuery',
+    out:'updates: messages, callback taps'
+  },
+  {
+    id:'telegram', x:300, y:272, w:190, h:96, kind:'transport', color:'#26a5e4', status:'live',
+    title:'src/telegram', note:'poll · send · chunk · 429',
+    desc:'The only module that knows Telegram exists. Long-poll loop with crash-safe offset resume, an outbox that serializes sends and waits out flood control (429 retry_after), chunking near the 4096-char cap, HTML escaping.',
+    in:'bot token · injectable base URL (tests point it at a local fake)',
+    out:'IncomingMessage, one normalized union for the whole bridge',
+    src:['src/telegram/poller.ts','src/telegram/api.ts'], test:['src/telegram/poller.test.ts']
+  },
+  {
+    id:'presence', x:760, y:70, w:190, h:96, kind:'liveness', color:'#5cc3f5', status:'live',
+    title:'src/presence', note:'is it thinking or dead?',
+    desc:'Typing action refreshed inside Telegram\'s 5-second window, one status message edited in place (throttled, latest wins), tool activity surfaced live, the answer as its own message, and an explicit ✅ ⚠️ ⏱ resolution. Hard timeout included.',
+    in:'AgentEvent stream',
+    out:'typing · status edits · chunked answer · resolution',
+    src:['src/presence/presence.ts'], test:['src/presence/presence.test.ts']
+  },
+  {
+    id:'gate', x:570, y:272, w:180, h:96, kind:'security', color:'#3fd0d4', status:'live',
+    title:'src/gate', note:'deterministic · no AI',
+    desc:'A pure decision function: message + store snapshot in, exactly one decision out. Owner claim via one-time deep link, pending queue for strangers, approve/guest/block buttons, forgery checks. No text reaches any model unless this says run.',
+    in:'IncomingMessage · store snapshot',
+    out:'run(tier) · greet · claim-owner · request-approval · approve · ignore',
+    src:['src/gate/gate.ts'], test:['src/gate/gate.test.ts']
+  },
+  {
+    id:'store', x:575, y:470, w:170, h:88, kind:'state', color:'#6ea8dc', status:'live',
+    title:'src/store', note:'flat JSON · atomic',
+    desc:'Users and tiers, the one-time claim code, the chat-to-session map, the poll offset. Atomic writes (tmp + rename), serialized updates. No database, on purpose.',
+    in:'mutations',
+    out:'state snapshot',
+    src:['src/store/store.ts'], test:['src/store/store.test.ts']
+  },
+  {
+    id:'runner', x:830, y:272, w:180, h:96, kind:'composition', color:'#26a5e4', status:'live',
+    title:'src/runner', note:'queue · sessions · refusal',
+    desc:'One active run per chat, the rest queue behind it. Resumes the chat\'s agent session, streams the adapter into presence, persists the session id. Refuses to route non-owner tiers to adapters that cannot hard-gate tools.',
+    in:'gate-approved prompt + tier',
+    out:'adapter invocations · presence feed · session updates',
+    src:['src/runner/runner.ts'], test:['src/app.test.ts']
+  },
+  {
+    id:'policy', x:845, y:470, w:170, h:88, kind:'security', color:'#e0a84a', status:'planned',
+    title:'src/policy', note:'phase 6 · next up',
+    desc:'Tier → TierPolicy (tool patterns, path scope, timeouts), mapped by each adapter to its harness\'s real enforcement. For Claude Code: generated settings permissions, allow/deny flags, and a PreToolUse hook whose deny holds even in bypassPermissions. Prompt text is never an enforcement mechanism.',
+    in:'tier name',
+    out:'harness-level enforcement artifacts (settings · flags · hooks)'
+  },
+  {
+    id:'adapter', x:1090, y:272, w:250, h:96, kind:'agent', color:'#26a5e4', status:'live',
+    title:'src/agents/claude-code', note:'claude -p · stream-json',
+    desc:'Spawns claude -p --output-format stream-json and translates NDJSON events (captured from a live run, not docs) into the adapter contract. Resumes sessions with --resume. Declares capabilities honestly: toolGating flips to hard only when phase 6 lands.',
+    in:'{ prompt, sessionId?, cwd, policy }',
+    out:'AgentEvent stream: status · tool · text · done(sessionId) · error',
+    src:['src/agents/claude-code/adapter.ts','src/agents/contract.ts'], test:['src/agents/claude-code/adapter.test.ts']
+  },
+  {
+    id:'more', x:1105, y:470, w:220, h:80, kind:'agent', color:'#e0a84a', status:'planned',
+    title:'more adapters', note:'opencode · codex · gemini',
+    desc:'Phase 8. Same contract: run({prompt, sessionId, cwd, policy}) returning a stream of AgentEvents, plus an honest capability declaration. Agent-specific code never leaks outside src/agents/.',
+    in:'the same contract',
+    out:'the same events',
+    src:['src/agents/contract.ts']
+  },
+];
+
+const EDGES = [
+  {from:'tg', a:'right', to:'telegram', b:'left', label:'long poll'},
+  {from:'telegram', a:'right', to:'gate', b:'left', label:'IncomingMessage'},
+  {from:'gate', a:'bottom', to:'store', b:'top', label:'tiers · claim · pending'},
+  {from:'gate', a:'right', to:'runner', b:'left', label:'allow(tier)'},
+  {from:'runner', a:'bottom', to:'store', b:'right', label:'sessions', dashed:true},
+  {from:'runner', a:'right', to:'adapter', b:'left', label:'prompt · session · policy'},
+  {from:'policy', a:'right', to:'adapter', b:'bottom', boff:.25, label:'settings + hooks', amber:true, dashed:true},
+  {from:'adapter', a:'top', to:'presence', b:'right', label:'AgentEvent stream'},
+  {from:'presence', a:'left', to:'telegram', b:'top', label:'typing · status · answer'},
+  {from:'more', a:'top', to:'adapter', b:'bottom', boff:.72, label:'same contract', dashed:true, amber:true},
+];
+
+const svg = document.getElementById('atlas');
+const gE = document.getElementById('edges');
+const gN = document.getElementById('nodes');
+const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
+
+function anchor(n, side, off = .5){
+  if (side === 'left')   return { x:n.x,        y:n.y + n.h*off, dx:-1, dy:0 };
+  if (side === 'right')  return { x:n.x + n.w,  y:n.y + n.h*off, dx:1,  dy:0 };
+  if (side === 'top')    return { x:n.x + n.w*off, y:n.y,        dx:0,  dy:-1 };
+  return                        { x:n.x + n.w*off, y:n.y + n.h,  dx:0,  dy:1 };
+}
+
+function el(name, attrs, parent){
+  const e = document.createElementNS('http://www.w3.org/2000/svg', name);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  parent.appendChild(e);
+  return e;
+}
+
+for (const edge of EDGES){
+  const p1 = anchor(byId[edge.from], edge.a, edge.aoff ?? .5);
+  const p2 = anchor(byId[edge.to], edge.b, edge.boff ?? .5);
+  const k = Math.max(34, Math.hypot(p2.x - p1.x, p2.y - p1.y) * .35);
+  const d = `M${p1.x} ${p1.y} C${p1.x + p1.dx*k} ${p1.y + p1.dy*k}, ${p2.x + p2.dx*k} ${p2.y + p2.dy*k}, ${p2.x} ${p2.y}`;
+  const path = el('path', { d, class:`edge${edge.dashed ? ' dashed' : ''}${edge.amber ? ' amber' : ''}`,
+    'marker-end': edge.amber ? 'url(#arrAmber)' : 'url(#arr)' }, gE);
+  const mx = (p1.x + p2.x)/2 + (p1.dx + p2.dx)*k*.18;
+  const my = (p1.y + p2.y)/2 + (p1.dy + p2.dy)*k*.18;
+  const label = el('text', { x:mx, y:my - 6, class:'elabel', 'text-anchor':'middle' }, gE);
+  label.textContent = edge.label;
+}
+
+for (const n of NODES){
+  const g = el('g', { class:`node ${n.status === 'planned' ? 'planned' : ''} ${n.kind === 'external' ? 'external' : ''}`, tabindex:'0', role:'button', 'aria-label':n.title }, gN);
+  el('rect', { class:'nbox', x:n.x, y:n.y, width:n.w, height:n.h, rx:12 }, g);
+  const kind = el('text', { class:'nkind', x:n.x + 14, y:n.y + 24, fill:n.color }, g);
+  kind.textContent = n.status === 'planned' ? `${n.kind} · planned` : n.kind;
+  const label = el('text', { class:'nlabel', x:n.x + 14, y:n.y + 47 }, g);
+  label.textContent = n.title;
+  const note = el('text', { class:'nnote', x:n.x + 14, y:n.y + 68 }, g);
+  note.textContent = n.note;
+  g.addEventListener('click', (event) => { if (!suppressClick) { event.stopPropagation(); openPanel(n); } });
+  g.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPanel(n); } });
+}
+
+/* ---------- detail panel ---------- */
+const panel = document.getElementById('panel');
+function openPanel(n){
+  document.getElementById('pKind').textContent = n.kind;
+  document.getElementById('pTitle').textContent = n.title;
+  const chip = document.getElementById('pStatus');
+  chip.textContent = n.status;
+  chip.className = `chip ${n.status}`;
+  document.getElementById('pDesc').textContent = n.desc;
+  document.getElementById('pIn').textContent = n.in;
+  document.getElementById('pOut').textContent = n.out;
+  const links = document.getElementById('pLinks');
+  links.innerHTML = '';
+  for (const path of (n.src ?? [])){
+    const a = document.createElement('a');
+    a.href = REPO + path; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = `${path.split('/').pop()} ↗`;
+    links.appendChild(a);
+  }
+  for (const path of (n.test ?? [])){
+    const a = document.createElement('a');
+    a.href = REPO + path; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = `${path.split('/').pop()} ↗`;
+    links.appendChild(a);
+  }
+  panel.hidden = false;
+}
+document.getElementById('closePanel').addEventListener('click', () => { panel.hidden = true; });
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.hidden = true; });
+svg.addEventListener('click', () => { if (!suppressClick) panel.hidden = true; });
+
+/* ---------- pan / zoom ---------- */
+const HOME = { x:0, y:20, w:1440, h:620 };
+let vb = { ...HOME };
+let suppressClick = false;
+function applyVb(){ svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+
+let dragging = null;
+svg.addEventListener('pointerdown', (event) => {
+  dragging = { px:event.clientX, py:event.clientY, moved:0 };
+  svg.classList.add('grabbing');
+  svg.setPointerCapture(event.pointerId);
+});
+svg.addEventListener('pointermove', (event) => {
+  if (!dragging) return;
+  const scale = vb.w / svg.clientWidth;
+  const dx = (event.clientX - dragging.px) * scale;
+  const dy = (event.clientY - dragging.py) * scale;
+  dragging.moved += Math.abs(event.clientX - dragging.px) + Math.abs(event.clientY - dragging.py);
+  dragging.px = event.clientX; dragging.py = event.clientY;
+  vb.x -= dx; vb.y -= dy;
+  applyVb();
+});
+function endDrag(){
+  if (!dragging) return;
+  suppressClick = dragging.moved > 6;
+  dragging = null;
+  svg.classList.remove('grabbing');
+  setTimeout(() => { suppressClick = false; }, 0);
+}
+svg.addEventListener('pointerup', endDrag);
+svg.addEventListener('pointercancel', endDrag);
+
+function zoom(factor, cx, cy){
+  const rect = svg.getBoundingClientRect();
+  const mx = vb.x + ((cx ?? rect.width/2) / rect.width) * vb.w;
+  const my = vb.y + ((cy ?? rect.height/2) / rect.height) * vb.h;
+  const w = Math.min(3200, Math.max(420, vb.w * factor));
+  const scale = w / vb.w;
+  vb = { x: mx - (mx - vb.x) * scale, y: my - (my - vb.y) * scale, w, h: vb.h * scale };
+  applyVb();
+}
+svg.addEventListener('wheel', (event) => {
+  event.preventDefault();
+  const rect = svg.getBoundingClientRect();
+  zoom(event.deltaY > 0 ? 1.12 : 1/1.12, event.clientX - rect.left, event.clientY - rect.top);
+}, { passive:false });
+document.getElementById('zin').addEventListener('click', () => zoom(1/1.25));
+document.getElementById('zout').addEventListener('click', () => zoom(1.25));
+document.getElementById('zfit').addEventListener('click', () => { vb = { ...HOME }; applyVb(); });
+applyVb();
+</script>
+</body>
+</html>
