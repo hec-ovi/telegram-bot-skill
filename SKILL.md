@@ -23,7 +23,9 @@ Check for an existing token before asking anything, in this order, without ever 
 curl -s "https://api.telegram.org/bot$(grep '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2-)/getMe"
 ```
 
-If either reply contains `"ok":true`, everything is already set up. Tell the human which bot it is (the `username` in that reply) and go straight to step 4 (start it) and step 6 (confirm). Only continue to step 1 when neither place has a usable token.
+No curl on this machine? Run `npm run setup` with no arguments instead: it finds the token the same way (env first, then `.env`), validates it against Telegram using Node alone, and prints the bot's username.
+
+If the check says `"ok":true` (or setup prints the bot name), everything is already set up. Tell the human which bot it is and go straight to step 4 (start it) and step 6 (confirm). Only continue to step 1 when no place has a usable token.
 
 ## Step 1: ask for the token
 
