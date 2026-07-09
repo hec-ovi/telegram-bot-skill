@@ -66,12 +66,12 @@ Either way, setup checks the token against Telegram, writes `.env` with file mod
 From the folder that contains this SKILL.md:
 
 ```bash
-npm start
+npm run bg
 ```
 
-It reads `.env` by itself, so this exact command also works after any reboot or in a fresh session: no arguments, no reconfiguration. There is nothing to install; the project has zero dependencies. The bridge must stay running: start it as a background process if you can, otherwise ask the human to run it in a second terminal and paste back what it prints.
+It starts the bridge detached, waits until the claim link and QR appear, prints them, and RETURNS, so it never blocks your shell. `npm run status` checks on it, `npm run stop` stops it. It reads `.env` by itself, so the same command works after any reboot: no arguments, no reconfiguration, nothing to install (zero dependencies). Never start a second bridge while one is running: one token allows exactly one poller. (`npm start` is the same bridge in the foreground, for humans and process managers.)
 
-Special case, docker rig: if your working directory is `/skill`, you are inside the examples/pi-gemma container and cannot start the bridge yourself. Tell the human: put the token into `examples/pi-gemma/.env` as `TELEGRAM_BOT_TOKEN=<token>`, then run on the host: `docker compose up bot`.
+Docker rig note: inside the examples/pi-gemma container, `npm run bg` works but the bridge dies when your session's container exits. For the one that survives reboots, tell the human to run on the host: `docker compose up -d bot` (and stop any session bridge first).
 
 ## Step 5: hand over the claim link
 
