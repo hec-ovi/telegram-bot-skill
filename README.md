@@ -10,6 +10,6 @@ Design rules:
 - Strangers hit a gate, not the agent. A deterministic, non-agentic layer holds unknown users in a pending queue until the owner approves them into a tier with one tap.
 - A convinced model is not a security boundary. Tiers map to harness-level config (permission rules, hooks), so a blocked tool stays blocked no matter what a chat user talks the agent into.
 
-Status: the zero-dep Telegram client is in (`src/telegram`, run it with `npm test`, Node >= 22.18). Next up: the agent adapter contract. Plan lives in ROADMAP.md, module contracts in ARCHITECTURE.md.
+Status: Telegram client, agent adapter contract with the Claude Code adapter, and the presence layer are in (`npm test`, Node >= 22.18). Next up: the access gate. Plan lives in ROADMAP.md, module contracts in ARCHITECTURE.md.
 
 License: MIT.

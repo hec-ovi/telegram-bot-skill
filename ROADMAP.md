@@ -20,12 +20,12 @@ ARCHITECTURE.md with module boundaries and each contract's in/out. This roadmap.
 `src/telegram`: thin client over `fetch` against the official Bot API, base URL injectable for tests. `getUpdates` long-poll loop with offset tracking and crash-safe resume, `sendMessage`, `editMessageText`, `sendChatAction`, `answerCallbackQuery`, `setMessageReaction`, `getMe`. Outbound queue that honors 429 `retry_after`. Chunking near the 4096-char cap on paragraph or word boundaries. HTML parse mode with `<` `>` `&` escaping.
 Tests: `node:test` plus a local `node:http` fake of the Bot API, exercised end to end through the polling loop.
 
-## Phase 3: adapter contract and first adapter
+## Phase 3: adapter contract and first adapter (done)
 
 `src/agents/contract.ts` per ARCHITECTURE.md, plus a scripted fake adapter for tests. `src/agents/claude-code`: spawns `claude -p --output-format stream-json --verbose`, parses the NDJSON events, captures `session_id`, resumes with `--resume`. Capture the real event schema from a live run, do not trust docs alone.
 Tests: a fake `claude` executable as fixture, no network.
 
-## Phase 4: presence layer
+## Phase 4: presence layer (done)
 
 `src/presence`: typing action re-sent about every 4.5s while a run lives, one status message edited in place (at least 1.5s between edits, honors `retry_after`), tool activity shown ("running a command", "editing bot.ts"), final answer as a separate message, explicit resolution on the status message. Hard timeout with a failure state that says so.
 Tests: fake adapter plus fake Bot API, assert the exact effect sequence including the timeout path.
