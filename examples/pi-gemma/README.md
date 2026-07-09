@@ -2,6 +2,8 @@
 
 One compose file, three containers, one `.env`: [llama.cpp](https://github.com/ggml-org/llama.cpp) serving a local GGUF on Vulkan (service config mirrors [llama-vulkan-strix](https://github.com/hec-ovi/llama-vulkan-strix), weights pinned to GTT on Strix Halo), the [Pi coding agent](https://github.com/earendil-works/pi) wired to it, and the bridge answering Telegram through both. No cloud, no API keys.
 
+First full live cycle verified 2026-07-09: config detected by the agent, bridge started non-blocking from inside the Pi session, owner seeded from env, and a "hello" sent from a phone came back answered by Gemma, with the typing indicator and the 🧠 status visible in Telegram the whole time.
+
 ## Tested on the floor, on purpose
 
 This rig is the project's reference test bench, and it is deliberately the weakest reasonable stack: a small local model (Gemma 4 26B MoE, about 4B active parameters per token, Q4 quantized) driven by a tiny CLI agent (Pi). The bridge does all the deterministic work itself: the gate, the tiers, the typing and status feedback, the sessions, the QR onboarding. The agent behind it only has to read SKILL.md and answer questions. So if setup and chat survive this floor, a stronger CLI (Claude Code, Codex, opencode, Hermes) on a bigger model has strictly more capability to work with, never less. That is the design bet, and this rig is how it keeps getting verified.
