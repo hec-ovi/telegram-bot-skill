@@ -58,7 +58,7 @@ First start prints a one-time claim link (`https://t.me/yourbot?start=...`) plus
 
 ### Fully local, no cloud
 
-The same bridge runs on a local model: the [Pi coding agent](https://github.com/earendil-works/pi) against any llama.cpp / OpenAI-compatible server. [examples/pi-gemma](examples/pi-gemma) is a ready Docker rig (tested target: Gemma 4 26B heretic on Vulkan) where Pi also guides the whole setup by reading [SKILL.md](SKILL.md).
+The same bridge runs on a local model: the [Pi coding agent](https://github.com/earendil-works/pi) against any llama.cpp / OpenAI-compatible server. [examples/pi-gemma](examples/pi-gemma) brings up the whole thing with one compose file and one `.env`: llama.cpp on Vulkan serving your GGUF, Pi wired to it, the bridge on top. That rig is the project's reference test bench on purpose: a small local model driven by a tiny CLI is the floor, and everything is verified against the floor. A stronger CLI (Claude Code, Codex, opencode, Hermes) on a bigger model has strictly more capability behind the same bridge, never less.
 
 ### No token yet?
 

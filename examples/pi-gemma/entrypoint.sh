@@ -9,7 +9,7 @@ cat > /root/.pi/agent/models.json <<EOF
 {
   "providers": {
     "local": {
-      "baseUrl": "${LLAMA_BASE_URL:-http://127.0.0.1:8080/v1}",
+      "baseUrl": "${LLAMA_BASE_URL:-http://llm:8080/v1}",
       "api": "openai-completions",
       "apiKey": "local",
       "compat": {

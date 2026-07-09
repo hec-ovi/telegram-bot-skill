@@ -1,44 +1,106 @@
-# Test rig: the Pi coding agent on a local llama.cpp server, with this
-# repo mounted as a skill. `network_mode: host` so 127.0.0.1 reaches the
-# llama.cpp server running on the host.
+# One-command local test rig for telegram-bot-skill:
+#   llm  - llama.cpp server (Vulkan) serving your GGUF, weights in GTT
+#   pi   - the Pi coding agent wired to it, this repo mounted as a skill
+#   bot  - the bridge, answering Telegram through pi + the local model
+#
+# Config lives in ./.env (cp .env.example .env). The llm service mirrors
+# hec-ovi/llama-vulkan-strix (same image, devices, GTT pinning, flags).
 
 services:
-  # Interactive Pi with the skill loaded: this is where the agent guides
-  # you through BotFather and token creation.
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server-vulkan
+    restart: unless-stopped
+    # Vulkan needs the render node only. No /dev/kfd, no ROCm, no privileged.
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-990}"
+      - "${VIDEO_GID:-44}"
+    environment:
+      # Presence check in llama.cpp: any value pins weights into GTT (unified
+      # RAM) instead of the small VRAM carve-out on Strix Halo.
+      - GGML_VK_PREFER_HOST_MEMORY=1
+    volumes:
+      - ${MODELS_DIR:-./models}:/models:ro
+    ports:
+      - "${LLM_PORT:-8080}:8080"
+    command:
+      - --model
+      - /models/${LLM_MODEL:?set LLM_MODEL in .env to a GGUF file path relative to MODELS_DIR}
+      - --alias
+      - ${LLM_ALIAS:-llm}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --n-gpu-layers
+      - "${LLM_NGL:-99}"
+      - --ctx-size
+      - "${LLM_CTX:-32768}"
+      - --parallel
+      - "${LLM_PARALLEL:-1}"
+      - --jinja
+      - --chat-template-kwargs
+      - '{"enable_thinking": true}'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 60
+      start_period: 300s
+    networks:
+      - rig
+
+  # Interactive Pi with the skill loaded: the agent that guides you through
+  # BotFather and token creation.
   #   docker compose run --rm pi
   pi:
     build: .
-    network_mode: host
     stdin_open: true
     tty: true
+    depends_on:
+      llm:
+        condition: service_healthy
     environment:
-      LLAMA_BASE_URL: ${LLAMA_BASE_URL:-http://127.0.0.1:8080/v1}
-      LLAMA_MODEL_ID: ${LLAMA_MODEL_ID:-gemma-4-26b}
+      LLAMA_BASE_URL: http://llm:8080/v1
+      LLAMA_MODEL_ID: ${LLM_ALIAS:-llm}
+      LLAMA_CONTEXT_WINDOW: ${LLM_CTX:-32768}
     volumes:
       - ../..:/skill
       - pi-home:/root/.pi
       - data:/data
+    networks:
+      - rig
 
-  # The bridge itself, answering Telegram through Pi + the local model.
-  #   TELEGRAM_BOT_TOKEN=123:AAE... docker compose up bot
+  # The bridge itself, answering Telegram through pi + the local model.
+  #   docker compose up bot
   bot:
     build: .
-    network_mode: host
     working_dir: /skill
     command: ["npm", "start"]
+    depends_on:
+      llm:
+        condition: service_healthy
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       AGENT_ADAPTER: pi
-      PI_MODEL: local/${LLAMA_MODEL_ID:-gemma-4-26b}
+      PI_MODEL: local/${LLM_ALIAS:-llm}
       PI_SESSION_DIR: /data/pi-sessions
       STATE_FILE: /data/bot-state.json
       AGENT_CWD: /data/workdir
-      LLAMA_BASE_URL: ${LLAMA_BASE_URL:-http://127.0.0.1:8080/v1}
-      LLAMA_MODEL_ID: ${LLAMA_MODEL_ID:-gemma-4-26b}
+      LLAMA_BASE_URL: http://llm:8080/v1
+      LLAMA_MODEL_ID: ${LLM_ALIAS:-llm}
+      LLAMA_CONTEXT_WINDOW: ${LLM_CTX:-32768}
     volumes:
       - ../..:/skill
       - pi-home:/root/.pi
       - data:/data
+    networks:
+      - rig
+
+networks:
+  rig:
+    driver: bridge
 
 volumes:
   pi-home:
