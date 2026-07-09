@@ -96,6 +96,7 @@ export type IncomingMessage =
       userId: number
       messageId: number
       text: string
+      name?: string
     }
   | {
       kind: 'callback'

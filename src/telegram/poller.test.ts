@@ -30,6 +30,7 @@ test('end to end: long-poll hold resolves on pushed message, normalized and offs
       userId: 42,
       messageId: pushed.message!.message_id,
       text: 'hi agent',
+      name: 'user',
     })
     assert.deepEqual(saved, [pushed.update_id + 1])
     await iterator.return()

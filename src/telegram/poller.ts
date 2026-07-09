@@ -60,6 +60,7 @@ export function normalizeUpdate(update: Update): IncomingMessage | undefined {
       userId: message.from.id,
       messageId: message.message_id,
       text: message.text,
+      name: message.from.username ?? message.from.first_name,
     }
   }
   const callback = update.callback_query

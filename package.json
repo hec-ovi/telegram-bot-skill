@@ -10,6 +10,7 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "start": "node src/bot.ts",
     "test": "node --test \"src/**/*.test.ts\""
   }
 }
