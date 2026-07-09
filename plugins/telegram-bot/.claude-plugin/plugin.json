@@ -1,0 +1,5 @@
+{
+  "name": "telegram-bot",
+  "description": "Expose the local coding agent as a private Telegram bot: guided token setup, zero-dependency bridge, live presence, deterministic access gate with tiers, QR onboarding.",
+  "version": "0.1.0"
+}

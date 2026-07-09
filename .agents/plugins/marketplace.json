@@ -1,0 +1,20 @@
+{
+  "name": "telegram-bot-skill",
+  "interface": {
+    "displayName": "Telegram Bot Skill"
+  },
+  "plugins": [
+    {
+      "name": "telegram-bot-codex",
+      "source": {
+        "source": "local",
+        "path": "./plugins/telegram-bot-codex"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

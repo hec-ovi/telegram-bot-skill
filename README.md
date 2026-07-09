@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/Status-usable_·_phase_6_next-orange" alt="Status" />
   <img src="https://img.shields.io/badge/Dependencies-0-success" alt="Zero dependencies" />
   <img src="https://img.shields.io/badge/Node-%3E%3D22.18-339933?logo=nodedotjs&logoColor=white" alt="Node >= 22.18" />
-  <img src="https://img.shields.io/badge/Tests-60_passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-73_passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT" />
 </p>
 
@@ -77,6 +77,37 @@ Two routes:
 - **You know Telegram bots:** paste your existing token and go.
 - **First time:** open Telegram, find `@BotFather`, send `/newbot`, pick a name, pick a username ending in `bot`, copy the token it gives you. One minute, free. Or skip reading entirely: tell your CLI agent *"set up the telegram bot from this repo"*. [SKILL.md](SKILL.md) is written for agents, and it will walk you through token creation, start the bridge, and hand you the claim link.
 
+## Install as a skill
+
+The repo is an installable agent skill (open SKILL.md format), so any CLI agent can run the whole setup conversationally. Four routes:
+
+```bash
+# any code CLI that speaks the SKILL.md format
+npx skills add hec-ovi/telegram-bot-skill
+
+# Claude Code marketplace
+/plugin marketplace add hec-ovi/telegram-bot-skill
+/plugin install telegram-bot@telegram-bot-skill
+
+# Codex
+codex plugin marketplace add hec-ovi/telegram-bot-skill
+
+# plain git, for anything that reads ~/.agents/skills (pi, hermes, ...) or ~/.claude/skills
+git clone https://github.com/hec-ovi/telegram-bot-skill ~/.agents/skills/telegram-bot
+```
+
+Then tell your agent: *"set up the telegram bot"*. Plugin routes carry only the skill file; its step 0 clones the bridge code when it is missing.
+
+### Manage access from the terminal
+
+Live approvals are one tap in Telegram, and the same whitelist is scriptable:
+
+```bash
+npm run users                        # list everyone and their tier
+npm run users -- set 123456 trusted  # owner | trusted | guest | blocked | pending
+npm run users -- remove 123456
+```
+
 ## Modules
 
 Each module is isolated behind an explicit in/out contract (full detail in [ARCHITECTURE.md](ARCHITECTURE.md)); agent-specific code exists only inside `src/agents/<adapter>`.
@@ -120,16 +151,18 @@ The bridge wraps exactly two things: the official Bot API and a local agent bina
 
 ```
 src/
-  telegram/   Bot API client, poller, chunking, outbox
+  telegram/   Bot API client, poller, chunking, flood control
   agents/     contract + claude-code and pi adapters (more to come)
   presence/   the "is it thinking or dead" layer
   gate/       deterministic access decisions
   store/      flat-file state
   runner/     queue + sessions + capability checks
   qr/         claim-link QR, rendered in the terminal
-  app.ts      wiring (testable), bot.ts: executable entry
+  app.ts      wiring, bot.ts: entry, daemon.ts: bg control
+  setup.ts    token wizard, users.ts: whitelist management
 examples/
   pi-gemma/   docker rig: Pi + llama.cpp local model end to end
+plugins/      claude code and codex plugin packaging
 ```
 
 MIT. Built by [Hector Oviedo](https://github.com/hec-ovi).

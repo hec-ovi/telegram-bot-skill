@@ -1,0 +1,25 @@
+{
+  "name": "telegram-bot-skill",
+  "owner": {
+    "name": "Hector Oviedo"
+  },
+  "metadata": {
+    "description": "Expose your local coding agent as a private Telegram bot",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "telegram-bot",
+      "source": "./plugins/telegram-bot",
+      "description": "Turns the local coding agent into a private Telegram bot: guided BotFather token creation, zero-dependency bridge with live typing/status presence, deterministic access gate with owner approval buttons, QR claim link, env-seeded recovery.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Hector Oviedo"
+      },
+      "homepage": "https://github.com/hec-ovi/telegram-bot-skill",
+      "repository": "https://github.com/hec-ovi/telegram-bot-skill",
+      "license": "MIT",
+      "keywords": ["telegram", "telegram-bot", "bridge", "agent-skills", "access-control", "zero-dependency", "qr", "self-hosted"]
+    }
+  ]
+}

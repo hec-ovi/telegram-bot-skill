@@ -58,7 +58,7 @@ export function rsEncode(data: number[], ecCount: number): number[] {
 }
 
 // Generator with coefficients in descending powers, leading 1 first.
-export function generatorDescending(ecCount: number): number[] {
+function generatorDescending(ecCount: number): number[] {
   let poly = [1]
   for (let i = 0; i < ecCount; i++) {
     const next = new Array(poly.length + 1).fill(0)

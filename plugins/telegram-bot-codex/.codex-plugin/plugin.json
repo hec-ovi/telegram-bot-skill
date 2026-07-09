@@ -1,0 +1,38 @@
+{
+  "name": "telegram-bot-codex",
+  "version": "0.1.0",
+  "description": "Expose the local coding agent as a private Telegram bot: guided token setup, zero-dependency bridge, live presence, deterministic access gate with tiers, QR onboarding.",
+  "author": {
+    "name": "Hector Oviedo",
+    "url": "https://github.com/hec-ovi"
+  },
+  "homepage": "https://github.com/hec-ovi/telegram-bot-skill",
+  "repository": "https://github.com/hec-ovi/telegram-bot-skill",
+  "license": "MIT",
+  "keywords": [
+    "telegram",
+    "telegram-bot",
+    "bridge",
+    "agent-skills",
+    "access-control"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Telegram Bot",
+    "shortDescription": "Your coding agent as a private Telegram bot",
+    "longDescription": "Guides bot token creation with BotFather, runs a zero-dependency bridge with live typing and status presence, gates strangers behind owner approval buttons, and onboards via a QR claim link.",
+    "developerName": "Hector Oviedo",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/hec-ovi/telegram-bot-skill",
+    "defaultPrompt": [
+      "Set up the telegram bot so I can chat with you from my phone."
+    ],
+    "screenshots": [],
+    "brandColor": "#26A5E4"
+  }
+}
