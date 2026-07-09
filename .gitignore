@@ -4,3 +4,5 @@ node_modules/
 examples/pi-gemma/data/
 bot-state.json
 pi-sessions/
+.bridge.pid
+.bridge.log

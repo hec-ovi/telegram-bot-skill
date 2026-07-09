@@ -11,6 +11,9 @@
   },
   "scripts": {
     "start": "node src/bot.ts",
+    "bg": "node src/daemon.ts start",
+    "stop": "node src/daemon.ts stop",
+    "status": "node src/daemon.ts status",
     "setup": "node src/setup.ts",
     "test": "node --test \"src/**/*.test.ts\""
   }
