@@ -65,10 +65,19 @@ services:
       LLAMA_BASE_URL: http://llm:8080/v1
       LLAMA_MODEL_ID: ${LLM_ALIAS:-llm}
       LLAMA_CONTEXT_WINDOW: ${LLM_CTX:-32768}
-      # So the agent inside can check and verify the configured token
-      # (SKILL.md step 0) exactly like the bot service does.
+      # Full parity with the bot service, so a bridge started from inside
+      # the pi session (npm run bg) behaves identically: same token, same
+      # adapter, same single state file. Never run both at once.
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       OWNER_ID: ${OWNER_ID:-}
+      TRUSTED_IDS: ${TRUSTED_IDS:-}
+      GUEST_IDS: ${GUEST_IDS:-}
+      BLOCKED_IDS: ${BLOCKED_IDS:-}
+      AGENT_ADAPTER: pi
+      PI_MODEL: local/${LLM_ALIAS:-llm}
+      PI_SESSION_DIR: /data/pi-sessions
+      STATE_FILE: /data/bot-state.json
+      AGENT_CWD: /data/workdir
     volumes:
       - ../..:/skill
       - pi-home:/root/.pi
