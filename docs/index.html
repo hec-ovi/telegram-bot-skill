@@ -240,19 +240,19 @@ const NODES = [
   },
   {
     id:'adapter', x:1090, y:272, w:250, h:96, kind:'agent', color:'#26a5e4', status:'live',
-    title:'src/agents/claude-code', note:'claude -p · stream-json',
-    desc:'Spawns claude -p --output-format stream-json and translates NDJSON events (captured from a live run, not docs) into the adapter contract. Resumes sessions with --resume. Declares capabilities honestly: toolGating flips to hard only when phase 6 lands.',
+    title:'src/agents', note:'claude-code · pi adapters',
+    desc:'The only agent-specific code in the repo. Claude Code: claude -p --output-format stream-json (events captured from a live run), sessions via --resume. Pi: pi --mode json -p, file-based sessions via --session, flags verified against pi 0.80.3. Both declare capabilities honestly; toolGating flips to hard when phase 6 lands.',
     in:'{ prompt, sessionId?, cwd, policy }',
     out:'AgentEvent stream: status · tool · text · done(sessionId) · error',
-    src:['src/agents/claude-code/adapter.ts','src/agents/contract.ts'], test:['src/agents/claude-code/adapter.test.ts']
+    src:['src/agents/claude-code/adapter.ts','src/agents/pi/adapter.ts','src/agents/contract.ts'], test:['src/agents/claude-code/adapter.test.ts','src/agents/pi/adapter.test.ts']
   },
   {
     id:'more', x:1105, y:470, w:220, h:80, kind:'agent', color:'#e0a84a', status:'planned',
     title:'more adapters', note:'opencode · codex · gemini',
-    desc:'Phase 8. Same contract: run({prompt, sessionId, cwd, policy}) returning a stream of AgentEvents, plus an honest capability declaration. Agent-specific code never leaks outside src/agents/.',
+    desc:'Phase 8. Same contract: run({prompt, sessionId, cwd, policy}) returning a stream of AgentEvents, plus an honest capability declaration. A docker rig for Pi + a local llama.cpp model already lives in examples/pi-gemma.',
     in:'the same contract',
     out:'the same events',
-    src:['src/agents/contract.ts']
+    src:['src/agents/contract.ts','examples/pi-gemma/README.md']
   },
 ];
 

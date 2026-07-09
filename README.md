@@ -5,16 +5,17 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-phase_5_of_11-orange" alt="Status" />
+  <img src="https://img.shields.io/badge/Status-usable_·_phase_6_next-orange" alt="Status" />
   <img src="https://img.shields.io/badge/Dependencies-0-success" alt="Zero dependencies" />
   <img src="https://img.shields.io/badge/Node-%3E%3D22.18-339933?logo=nodedotjs&logoColor=white" alt="Node >= 22.18" />
-  <img src="https://img.shields.io/badge/Tests-45_passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-60_passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT" />
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Telegram-official_Bot_API-26A5E4?logo=telegram&logoColor=white" alt="Telegram Bot API" />
-  <img src="https://img.shields.io/badge/Claude_Code-first_adapter-D97757?logo=anthropic&logoColor=white" alt="Claude Code" />
+  <img src="https://img.shields.io/badge/Adapters-Claude_Code_·_Pi-D97757?logo=anthropic&logoColor=white" alt="Adapters" />
+  <img src="https://img.shields.io/badge/Local_models-Pi_+_llama.cpp-8A2BE2" alt="Local models" />
   <img src="https://img.shields.io/badge/opencode_·_Codex_·_Gemini-planned-lightgrey" alt="More adapters planned" />
   <img src="https://img.shields.io/badge/TypeScript-native,_no_build-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
 </p>
@@ -45,13 +46,19 @@ cd telegram-bot-skill
 TELEGRAM_BOT_TOKEN=123456789:AAE... npm start
 ```
 
-First start prints a one-time claim link (`https://t.me/yourbot?start=...`). Open it in Telegram, tap Start, and you are the owner. Everyone else who messages the bot waits at the gate until you tap a button.
+First start prints a one-time claim link (`https://t.me/yourbot?start=...`) plus a QR code of it, right in the terminal (our own zero-dep encoder). Scan it, tap Start, and you are the owner. Everyone else who messages the bot waits at the gate until you tap a button.
 
 | Env var | Required | Default | What |
 |---|---|---|---|
 | `TELEGRAM_BOT_TOKEN` | yes | | Bot token from @BotFather |
 | `STATE_FILE` | no | `./bot-state.json` | Users, tiers, sessions, poll offset |
 | `AGENT_CWD` | no | current dir | Directory the agent works in |
+| `AGENT_ADAPTER` | no | `claude-code` | Which agent answers: `claude-code` or `pi` |
+| `PI_MODEL` | no | | Pi model ref, e.g. `local/gemma-4-26b` |
+
+### Fully local, no cloud
+
+The same bridge runs on a local model: the [Pi coding agent](https://github.com/earendil-works/pi) against any llama.cpp / OpenAI-compatible server. [examples/pi-gemma](examples/pi-gemma) is a ready Docker rig (tested target: Gemma 4 26B heretic on Vulkan) where Pi also guides the whole setup by reading [SKILL.md](SKILL.md).
 
 ### No token yet?
 
@@ -67,11 +74,12 @@ Each module is isolated behind an explicit in/out contract (full detail in [ARCH
 | Module | Job | State |
 |---|---|---|
 | `src/telegram` | Bot API client: long poll, 429 backoff, 4096-char chunking | ✅ |
-| `src/agents` | adapter contract + Claude Code adapter (live-captured stream-json) | ✅ |
+| `src/agents` | adapter contract + Claude Code and Pi adapters (live-verified schemas) | ✅ |
 | `src/presence` | typing loop, throttled status edits, chunked answers, timeouts | ✅ |
 | `src/gate` | deterministic access decisions, owner claim, approvals | ✅ |
 | `src/store` | flat JSON state, atomic writes, no database | ✅ |
 | `src/runner` | per-chat queue, session resume, capability refusal | ✅ |
+| `src/qr` | zero-dep QR encoder for the claim link (byte mode, EC L, v1-6) | ✅ |
 | `src/policy` | tier to harness-config mapping (settings, hooks, flags) | 🔜 next |
 
 ## Roadmap
@@ -94,7 +102,7 @@ Full plan with the reasoning per phase: [ROADMAP.md](ROADMAP.md).
 npm test
 ```
 
-45 tests on Node's built-in runner: the Telegram client is exercised end to end against a real local `node:http` fake of the Bot API (long-poll holds, flood control, offset resume), the Claude Code adapter against a scripted fake binary, and the whole bot through a full simulated conversation: claim, stranger knocks, forged approval rejected, owner approves, agent answers with live status, session resumes, troll blocked.
+60 tests on Node's built-in runner: the Telegram client is exercised end to end against a real local `node:http` fake of the Bot API (long-poll holds, flood control, offset resume), the Claude Code and Pi adapters against scripted fake binaries, the QR encoder against the canonical Reed-Solomon vector plus a golden matrix that was cross-verified with an independent decoder (OpenCV), and the whole bot through a full simulated conversation: claim, stranger knocks, forged approval rejected, owner approves, agent answers with live status, session resumes, troll blocked.
 
 ## Why zero dependencies
 
@@ -103,12 +111,15 @@ The bridge wraps exactly two things: the official Bot API and a local agent bina
 ```
 src/
   telegram/   Bot API client, poller, chunking, outbox
-  agents/     contract + claude-code adapter (more to come)
+  agents/     contract + claude-code and pi adapters (more to come)
   presence/   the "is it thinking or dead" layer
   gate/       deterministic access decisions
   store/      flat-file state
   runner/     queue + sessions + capability checks
+  qr/         claim-link QR, rendered in the terminal
   app.ts      wiring (testable), bot.ts: executable entry
+examples/
+  pi-gemma/   docker rig: Pi + llama.cpp local model end to end
 ```
 
 MIT. Built by [Hector Oviedo](https://github.com/hec-ovi).

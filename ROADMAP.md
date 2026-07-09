@@ -41,13 +41,14 @@ Pulled forward into this phase: the runner (per-chat queue, session persistence,
 `src/policy` maps tiers to `TierPolicy`. The Claude Code adapter turns a policy into generated per-tier settings (permissions allow/deny), `--allowedTools` / `--disallowedTools` flags, and a PreToolUse hook that denies out-of-tier calls (a hook deny holds even in bypassPermissions mode, per the Claude Code docs). Adapters that cannot do this declare `toolGating: 'soft'` or `'none'` and the runner refuses them for non-owner tiers.
 Tests: assert the generated config and flags per tier, and that capability downgrades block routing.
 
-## Phase 7: onboarding
+## Phase 7: onboarding (QR shipped early)
 
-`init` wizard: paste the BotFather token, validate with `getMe`, write config, print the owner claim link and a QR code. The QR encoder is our own zero-dep module (byte mode) rendered as terminal blocks, isolated in `src/qr` with its own tests. README rewritten around the three-minute setup.
+`init` wizard: paste the BotFather token, validate with `getMe`, write config. The QR part already shipped (2026-07-09): `src/qr` is our own zero-dep encoder (byte mode, EC level L, versions 1-6, all 8 masks with penalty scoring), cross-verified against an independent decoder, and the claim link prints as a scannable QR at first boot. SKILL.md also carries a message-by-message BotFather script an agent can relay verbatim. Remaining: the non-agent `init` wizard for humans without a CLI agent.
 
-## Phase 8: more adapters
+## Phase 8: more adapters (Pi shipped early)
 
-opencode (`opencode run` plus the `opencode.json` permissions block; verify the reported SDK deny-rule bug does not affect the config path before trusting it as hard gating), Codex CLI (`codex exec --json`, session resume), Gemini CLI. `docs/ADAPTERS.md`: how to write an adapter, how to declare capabilities honestly.
+The Pi coding agent adapter already shipped (2026-07-09): `pi --mode json -p` with file-based session resume via `--session <path>`, flags verified against pi 0.80.3, plus a Docker test rig (`examples/pi-gemma`) that runs the whole bridge on a local llama.cpp model. Pi's `--tools` / `--exclude-tools` flags are the phase 6 path to hard gating for it.
+Still to come: opencode (`opencode run` plus the `opencode.json` permissions block; verify the reported SDK deny-rule bug does not affect the config path before trusting it as hard gating), Codex CLI (`codex exec --json`, session resume), Gemini CLI. `docs/ADAPTERS.md`: how to write an adapter, how to declare capabilities honestly.
 
 ## Phase 9: hardening
 
