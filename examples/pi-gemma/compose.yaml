@@ -65,6 +65,10 @@ services:
       LLAMA_BASE_URL: http://llm:8080/v1
       LLAMA_MODEL_ID: ${LLM_ALIAS:-llm}
       LLAMA_CONTEXT_WINDOW: ${LLM_CTX:-32768}
+      # So the agent inside can check and verify the configured token
+      # (SKILL.md step 0) exactly like the bot service does.
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      OWNER_ID: ${OWNER_ID:-}
     volumes:
       - ../..:/skill
       - pi-home:/root/.pi

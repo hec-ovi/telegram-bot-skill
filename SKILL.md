@@ -9,13 +9,21 @@ This is a checklist to run, not a document to explain. Do not describe this file
 
 ## Step 0: is it already configured?
 
-Check for an existing config before asking anything. If a `.env` file exists next to this SKILL.md with a `TELEGRAM_BOT_TOKEN` value, verify it without ever printing it:
+Check for an existing token before asking anything, in this order, without ever printing it:
+
+1. The environment variable (containers and rigs pass it this way):
+
+```bash
+[ -n "$TELEGRAM_BOT_TOKEN" ] && curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"
+```
+
+2. A `.env` file next to this SKILL.md:
 
 ```bash
 curl -s "https://api.telegram.org/bot$(grep '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2-)/getMe"
 ```
 
-If the reply contains `"ok":true`, everything is already set up. Tell the human which bot it is (the `username` in that reply) and go straight to step 4 (start it) and step 6 (confirm). Only continue to step 1 when there is no usable token.
+If either reply contains `"ok":true`, everything is already set up. Tell the human which bot it is (the `username` in that reply) and go straight to step 4 (start it) and step 6 (confirm). Only continue to step 1 when neither place has a usable token.
 
 ## Step 1: ask for the token
 
