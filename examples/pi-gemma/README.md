@@ -44,7 +44,7 @@ Both `llm` and `bot` carry `restart: unless-stopped`, so after a PC reboot the D
 
 ## Notes
 
-- Leaving pi: `/exit` or `/quit` (also Ctrl+C twice, or Ctrl+D on an empty line). `/exit` is an alias this rig adds via a pi extension; stock pi only has `/quit`. If ever stuck: `docker ps` then `docker kill <container>` from another terminal.
+- Leaving pi: `/quit` (also Ctrl+C twice, or Ctrl+D on an empty line). If ever stuck: `docker ps` then `docker kill <container>` from another terminal.
 - The first `up` pulls the llama.cpp image and loads the model; the healthcheck allows about 5 minutes for that.
 - The llama.cpp API is also published on the host at `:${LLM_PORT}` (default 8080) for curl debugging; the containers talk over the compose network regardless.
 - All state lives as plain files in `./data/` next to the compose file: `bot-state.json` (owner, tiers, sessions, poll offset), `pi-sessions/` (per-chat agent memory), `workdir/` (where the agent works). Open it in your file explorer, edit it, or delete the folder to reset the test to zero.

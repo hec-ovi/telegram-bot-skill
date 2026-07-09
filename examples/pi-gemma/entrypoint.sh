@@ -3,7 +3,10 @@
 # whatever the compose service asks for (pi itself, or the bridge).
 set -e
 
-mkdir -p /root/.pi/agent/extensions /root/.pi/agent/skills /data/workdir /data/pi-sessions
+mkdir -p /root/.pi/agent/skills /data/workdir /data/pi-sessions
+
+# Clean up the /exit alias extension earlier rig versions installed.
+rm -f /root/.pi/agent/extensions/exit-alias.ts
 
 # /data is a host bind mount and the containers run as root; keep everything
 # readable and editable for the host user too (test rig, not production):
@@ -15,22 +18,6 @@ umask 000
 # directory name must equal the skill's frontmatter name. Symlink the mounted
 # repo under that exact name instead of relying on a --skill flag.
 ln -sfn /skill /root/.pi/agent/skills/telegram-bot
-
-# Pi only ships /quit; people type /exit and feel trapped in the container.
-# Register /exit as an alias that shuts pi down (which ends the container).
-cat > /root/.pi/agent/extensions/exit-alias.ts <<'EOF'
-export default function (pi) {
-  pi.registerCommand("exit", {
-    description: "Exit pi (alias of /quit; ends this docker container)",
-    handler: async (_args, ctx) => {
-      if (ctx && typeof ctx.shutdown === "function") {
-        await ctx.shutdown()
-      }
-      process.exit(0)
-    },
-  })
-}
-EOF
 
 cat > /root/.pi/agent/models.json <<EOF
 {
@@ -59,7 +46,7 @@ cat > /root/.pi/agent/models.json <<EOF
 EOF
 
 if [ "$1" = "pi" ]; then
-  echo "tips: leave pi with /exit or /quit (also: Ctrl+C twice, or Ctrl+D on an empty line)."
+  echo "tips: leave pi with /quit (also: Ctrl+C twice, or Ctrl+D on an empty line)."
   echo "      if ever stuck, from another terminal: docker ps; docker kill <container>"
 fi
 
