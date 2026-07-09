@@ -148,6 +148,20 @@ test('loadEnvConfig loads the file without overriding real env vars', () => {
   }
 })
 
+test('loadEnvConfig treats empty env vars as unset so the file wins', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cfg-empty-'))
+  try {
+    delete process.env.ENV_FILE
+    writeFileSync(join(dir, '.env'), 'TELEGRAM_BOT_TOKEN=from-file\n')
+    process.env.TELEGRAM_BOT_TOKEN = ''
+    loadEnvConfig(dir)
+    assert.equal(process.env.TELEGRAM_BOT_TOKEN, 'from-file')
+  } finally {
+    delete process.env.TELEGRAM_BOT_TOKEN
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('loadEnvConfig is a no-op without a file', () => {
   const dir = mkdtempSync(join(tmpdir(), 'cfg-none-'))
   try {

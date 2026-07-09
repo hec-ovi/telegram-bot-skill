@@ -6,7 +6,29 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+// Keys this project reads. Container setups (compose) often define them as
+// empty strings; empty must mean unset, or it would mask the .env file.
+const CONFIG_KEYS = [
+  'TELEGRAM_BOT_TOKEN',
+  'BOT_USERNAME',
+  'BOT_NAME',
+  'BOT_DESCRIPTION',
+  'BOT_ABOUT',
+  'OWNER_ID',
+  'TRUSTED_IDS',
+  'GUEST_IDS',
+  'BLOCKED_IDS',
+  'AGENT_ADAPTER',
+  'PI_MODEL',
+  'PI_SESSION_DIR',
+  'AGENT_CWD',
+  'STATE_FILE',
+]
+
 export function loadEnvConfig(cwd: string = process.cwd()): string | undefined {
+  for (const key of CONFIG_KEYS) {
+    if (process.env[key] === '') delete process.env[key]
+  }
   const file = process.env.ENV_FILE !== undefined && process.env.ENV_FILE.length > 0
     ? resolve(process.env.ENV_FILE)
     : resolve(cwd, '.env')
