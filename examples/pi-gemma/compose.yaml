@@ -1,0 +1,45 @@
+# Test rig: the Pi coding agent on a local llama.cpp server, with this
+# repo mounted as a skill. `network_mode: host` so 127.0.0.1 reaches the
+# llama.cpp server running on the host.
+
+services:
+  # Interactive Pi with the skill loaded: this is where the agent guides
+  # you through BotFather and token creation.
+  #   docker compose run --rm pi
+  pi:
+    build: .
+    network_mode: host
+    stdin_open: true
+    tty: true
+    environment:
+      LLAMA_BASE_URL: ${LLAMA_BASE_URL:-http://127.0.0.1:8080/v1}
+      LLAMA_MODEL_ID: ${LLAMA_MODEL_ID:-gemma-4-26b}
+    volumes:
+      - ../..:/skill
+      - pi-home:/root/.pi
+      - data:/data
+
+  # The bridge itself, answering Telegram through Pi + the local model.
+  #   TELEGRAM_BOT_TOKEN=123:AAE... docker compose up bot
+  bot:
+    build: .
+    network_mode: host
+    working_dir: /skill
+    command: ["npm", "start"]
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      AGENT_ADAPTER: pi
+      PI_MODEL: local/${LLAMA_MODEL_ID:-gemma-4-26b}
+      PI_SESSION_DIR: /data/pi-sessions
+      STATE_FILE: /data/bot-state.json
+      AGENT_CWD: /data/workdir
+      LLAMA_BASE_URL: ${LLAMA_BASE_URL:-http://127.0.0.1:8080/v1}
+      LLAMA_MODEL_ID: ${LLAMA_MODEL_ID:-gemma-4-26b}
+    volumes:
+      - ../..:/skill
+      - pi-home:/root/.pi
+      - data:/data
+
+volumes:
+  pi-home:
+  data:
