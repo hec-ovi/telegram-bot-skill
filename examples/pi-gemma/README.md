@@ -36,7 +36,9 @@ First boot prints the one-time owner claim link and a QR code. Scan it with your
 
 ## Notes
 
+- Leaving pi: `/exit` or `/quit` (also Ctrl+C twice, or Ctrl+D on an empty line). `/exit` is an alias this rig adds via a pi extension; stock pi only has `/quit`. If ever stuck: `docker ps` then `docker kill <container>` from another terminal.
 - The first `up` pulls the llama.cpp image and loads the model; the healthcheck allows about 5 minutes for that.
 - The llama.cpp API is also published on the host at `:${LLM_PORT}` (default 8080) for curl debugging; the containers talk over the compose network regardless.
 - All state (owner, tiers, sessions) lives in the `data` volume. `docker compose down -v` resets the whole test to zero.
+- Recover mode: set `OWNER_ID` (and optionally `TRUSTED_IDS` / `GUEST_IDS` / `BLOCKED_IDS`) in `.env` and even a wiped rig boots already owned, no claim link. Get your numeric id from @userinfobot, or claim once and copy it from the state file.
 - Non-owner users are refused agent runs until phase 6 lands (per-tier tool enforcement); that refusal is deliberate, not a bug.
