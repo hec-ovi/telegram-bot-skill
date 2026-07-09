@@ -43,8 +43,11 @@ Requires Node >= 22.18 and, for the default adapter, the `claude` CLI. There is 
 ```bash
 git clone https://github.com/hec-ovi/telegram-bot-skill
 cd telegram-bot-skill
-TELEGRAM_BOT_TOKEN=123456789:AAE... npm start
+TELEGRAM_BOT_TOKEN=123456789:AAE... npm run setup   # once: validates + writes ./.env (mode 600)
+npm start                                           # forever after: no arguments needed
 ```
+
+Prefer not to have the token in your shell history either? `cp .env.example .env`, paste it into the file, and run `npm run setup` with no arguments; it validates and completes the file. `npm start` always reads `./.env` on its own, so a configured checkout is plug and play after any reboot.
 
 First start prints a one-time claim link (`https://t.me/yourbot?start=...`) plus a QR code of it, right in the terminal (our own zero-dep encoder). Scan it, tap Start, and you are the owner. Everyone else who messages the bot waits at the gate until you tap a button.
 

@@ -15,12 +15,16 @@ import { ClaudeCodeAdapter } from './agents/claude-code/adapter.ts'
 import type { AgentAdapter } from './agents/contract.ts'
 import { PiAdapter } from './agents/pi/adapter.ts'
 import { createBot, type SeedUsers } from './app.ts'
+import { loadEnvConfig } from './config.ts'
 import { FileStore } from './store/store.ts'
 import { TelegramApi } from './telegram/api.ts'
 
+const envFile = loadEnvConfig()
+if (envFile !== undefined) console.log(`config loaded from ${envFile}`)
+
 const token = process.env.TELEGRAM_BOT_TOKEN
 if (token === undefined || token.length === 0) {
-  console.error('Set TELEGRAM_BOT_TOKEN (create a bot with @BotFather) and run again.')
+  console.error('Not configured yet. Run `npm run setup` once (it saves ./.env), or set TELEGRAM_BOT_TOKEN.')
   process.exit(1)
 }
 
@@ -59,8 +63,9 @@ const seed: SeedUsers = {
 const hasSeed = Object.values(seed).some((value) => value !== undefined)
 
 const store = await FileStore.open(stateFile)
+const apiBase = process.env.TELEGRAM_API_BASE
 const bot = createBot({
-  api: new TelegramApi(token),
+  api: new TelegramApi(token, apiBase !== undefined ? { baseUrl: apiBase } : {}),
   store,
   adapter,
   cwd: process.env.AGENT_CWD ?? process.cwd(),
