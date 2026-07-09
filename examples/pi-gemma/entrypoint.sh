@@ -3,7 +3,12 @@
 # whatever the compose service asks for (pi itself, or the bridge).
 set -e
 
-mkdir -p /root/.pi/agent/extensions /data/workdir /data/pi-sessions
+mkdir -p /root/.pi/agent/extensions /root/.pi/agent/skills /data/workdir /data/pi-sessions
+
+# Pi resolves an invoked skill at <skills-dir>/<skill-name>/SKILL.md, so the
+# directory name must equal the skill's frontmatter name. Symlink the mounted
+# repo under that exact name instead of relying on a --skill flag.
+ln -sfn /skill /root/.pi/agent/skills/telegram-bot
 
 # Pi only ships /quit; people type /exit and feel trapped in the container.
 # Register /exit as an alias that shuts pi down (which ends the container).

@@ -10,4 +10,4 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /skill
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["pi", "--skill", "/skill"]
+CMD ["pi"]
