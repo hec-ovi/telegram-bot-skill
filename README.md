@@ -91,6 +91,7 @@ npx skills add hec-ovi/telegram-bot-skill
 
 # Codex
 codex plugin marketplace add hec-ovi/telegram-bot-skill
+codex plugin add telegram-bot-codex@telegram-bot-skill
 
 # plain git, for anything that reads ~/.agents/skills (pi, hermes, ...) or ~/.claude/skills
 git clone https://github.com/hec-ovi/telegram-bot-skill ~/.agents/skills/telegram-bot

@@ -1,6 +1,6 @@
 ---
 name: telegram-bot
-description: Set up and run a private Telegram bot that lets the human chat with this coding agent from their phone. Use when the human asks to set up the telegram bot, to talk to the agent from Telegram, or to manage who can access it. This is a checklist to execute, not a document to describe. Start at step 1 right away by asking the token question.
+description: Set up and run a private Telegram bot that lets the human chat with this coding agent from their phone. Use when the human asks to set up the telegram bot, to talk to the agent from Telegram, or to manage who can access it. This is a checklist to execute, not a document to describe. Start at step 0 right away by checking for an existing configured token.
 ---
 
 # Telegram bot setup
