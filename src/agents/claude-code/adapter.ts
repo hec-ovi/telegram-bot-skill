@@ -10,6 +10,7 @@ import type {
   AgentEvent,
   AgentRunInput,
 } from '../contract.ts'
+import { summarizeToolInput } from '../util.ts'
 
 export interface ClaudeCodeAdapterOptions {
   // Override for tests or unusual installs, e.g. [process.execPath, '/path/fake.mjs'].
@@ -71,7 +72,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       if (event.type === 'assistant') {
         for (const block of event.message?.content ?? []) {
           if (block.type === 'tool_use') {
-            yield { kind: 'tool', name: block.name, detail: summarizeInput(block.input) }
+            yield { kind: 'tool', name: block.name, detail: summarizeToolInput(block.input) }
           }
         }
         continue
@@ -110,15 +111,4 @@ function parseLine(line: string): any | undefined {
   } catch {
     return undefined
   }
-}
-
-// One short human-readable hint about what the tool call touches.
-function summarizeInput(input: unknown): string | undefined {
-  if (typeof input !== 'object' || input === null) return undefined
-  const record = input as Record<string, unknown>
-  for (const key of ['command', 'file_path', 'path', 'pattern', 'url', 'description']) {
-    const value = record[key]
-    if (typeof value === 'string' && value.length > 0) return value.slice(0, 200)
-  }
-  return undefined
 }
