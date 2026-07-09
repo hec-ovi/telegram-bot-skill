@@ -5,6 +5,7 @@
 import { randomBytes } from 'node:crypto'
 import type { AgentAdapter } from './agents/contract.ts'
 import { decide } from './gate/gate.ts'
+import { qrMatrix, qrToTerminal } from './qr/qr.ts'
 import type { PresenceOptions } from './presence/presence.ts'
 import { Runner } from './runner/runner.ts'
 import type { FileStore, UserRecord } from './store/store.ts'
@@ -57,8 +58,14 @@ export function createBot(deps: BotDeps) {
           data.claimCode = randomBytes(9).toString('base64url')
         })
       }
+      const link = `https://t.me/${me.username}?start=${deps.store.data.claimCode}`
       log(`no owner yet. claim the bot (first tap wins):`)
-      log(`https://t.me/${me.username}?start=${deps.store.data.claimCode}`)
+      log(link)
+      try {
+        log(qrToTerminal(qrMatrix(link)))
+      } catch {
+        // A QR failure must never block the boot; the link above suffices.
+      }
     }
     log(`@${me.username} is polling`)
   }
