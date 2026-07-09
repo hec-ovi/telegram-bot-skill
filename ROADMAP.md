@@ -41,9 +41,9 @@ Pulled forward into this phase: the runner (per-chat queue, session persistence,
 `src/policy` maps tiers to `TierPolicy`. The Claude Code adapter turns a policy into generated per-tier settings (permissions allow/deny), `--allowedTools` / `--disallowedTools` flags, and a PreToolUse hook that denies out-of-tier calls (a hook deny holds even in bypassPermissions mode, per the Claude Code docs). Adapters that cannot do this declare `toolGating: 'soft'` or `'none'` and the runner refuses them for non-owner tiers.
 Tests: assert the generated config and flags per tier, and that capability downgrades block routing.
 
-## Phase 7: onboarding (QR shipped early)
+## Phase 7: onboarding (done)
 
-`init` wizard: paste the BotFather token, validate with `getMe`, write config. The QR part already shipped (2026-07-09): `src/qr` is our own zero-dep encoder (byte mode, EC level L, versions 1-6, all 8 masks with penalty scoring), cross-verified against an independent decoder, and the claim link prints as a scannable QR at first boot. SKILL.md also carries a message-by-message BotFather script an agent can relay verbatim. Remaining: the non-agent `init` wizard for humans without a CLI agent.
+All shipped 2026-07-09. `src/qr` is our own zero-dep encoder (byte mode, EC level L, versions 1-6, all 8 masks with penalty scoring), cross-verified against an independent decoder; the claim link prints as a scannable QR at first boot. `npm run setup` is the wizard: validates the token with `getMe` (interactive prompt or env), applies optional identity (`BOT_NAME`, `BOT_DESCRIPTION`, `BOT_ABOUT`), and writes `./.env` at mode 600, which `npm start` reads by itself from then on (`.env.example` is the template). SKILL.md carries the message-by-message BotFather script, a secure dont-paste-the-token route, and a step 0 that detects an already-configured checkout and skips straight to start.
 
 ## Phase 8: more adapters (Pi shipped early)
 

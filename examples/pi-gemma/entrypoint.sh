@@ -5,6 +5,12 @@ set -e
 
 mkdir -p /root/.pi/agent/extensions /root/.pi/agent/skills /data/workdir /data/pi-sessions
 
+# /data is a host bind mount and the containers run as root; keep everything
+# readable and editable for the host user too (test rig, not production):
+# fix what already exists, and umask so files created later stay open.
+chmod -R a+rwX /data 2>/dev/null || true
+umask 000
+
 # Pi resolves an invoked skill at <skills-dir>/<skill-name>/SKILL.md, so the
 # directory name must equal the skill's frontmatter name. Symlink the mounted
 # repo under that exact name instead of relying on a --skill flag.

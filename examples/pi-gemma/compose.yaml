@@ -68,7 +68,9 @@ services:
     volumes:
       - ../..:/skill
       - pi-home:/root/.pi
-      - data:/data
+      # Bind mount, not a named volume: state stays visible and editable as
+      # plain files in examples/pi-gemma/data/ on the host.
+      - ./data:/data
     networks:
       - rig
 
@@ -99,7 +101,7 @@ services:
     volumes:
       - ../..:/skill
       - pi-home:/root/.pi
-      - data:/data
+      - ./data:/data
     networks:
       - rig
 
@@ -109,4 +111,3 @@ networks:
 
 volumes:
   pi-home:
-  data:

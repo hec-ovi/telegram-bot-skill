@@ -1,3 +1,4 @@
 .research/
 node_modules/
 .env
+examples/pi-gemma/data/

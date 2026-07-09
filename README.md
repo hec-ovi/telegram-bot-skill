@@ -98,8 +98,8 @@ Each module is isolated behind an explicit in/out contract (full detail in [ARCH
 |---|---|---|
 | 0 to 5 | contracts, telegram client, adapters, presence, gate, runnable bot | ✅ |
 | 6 | per-tier tool enforcement inside the harness (settings + PreToolUse hooks) | 🔜 next |
-| 7 | onboarding wizard + QR claim code in the terminal | ⬜ |
-| 8 | opencode, Codex CLI, Gemini CLI adapters | ⬜ |
+| 7 | onboarding: terminal QR, `npm run setup`, `.env` config, agent-guided SKILL.md | ✅ |
+| 8 | more adapters: Pi shipped with a local-model rig; opencode, Codex, Gemini pending | 🟡 partial |
 | 9 | hardening: rate limits, audit log, token hygiene | ⬜ |
 | 10 | packaging: skill install routes, npm publish | ⬜ |
 | 11 | local MCP server surface | ⬜ |
