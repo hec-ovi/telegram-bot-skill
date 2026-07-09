@@ -71,6 +71,19 @@ The first start prints a one-time link like `https://t.me/<botname>?start=<code>
 
 Tell the human to send the bot any message from their phone. They should see the typing indicator, a status message that updates while the agent works, then the answer. Anyone else who messages the bot gets "this bot is private", and the owner gets Approve / Guest / Block buttons for them.
 
+## Optional: rename the bot, set its description or avatar
+
+If the human wants to change how the bot looks (any time, not just during setup):
+
+- Display name, profile description, and the short "about" line can be set from here:
+
+```bash
+BOT_NAME="My Agent" BOT_DESCRIPTION="What this bot does" BOT_ABOUT="short profile line" npm run setup
+```
+
+- The @username can never be changed; that would mean creating a new bot.
+- The avatar cannot be set through the Bot API. Guide the human: open @BotFather, send `/setuserpic`, pick the bot, then send it the photo.
+
 ## If something fails
 
 - Telegram answers 401: bad or revoked token. Redo steps 1 to 3.

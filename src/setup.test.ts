@@ -77,6 +77,35 @@ test('setup completes a hand-filled env file (secure route)', async () => {
   }
 })
 
+test('setup applies name and descriptions when provided', async () => {
+  const fake = new FakeBotApi()
+  await fake.start()
+  const dir = mkdtempSync(join(tmpdir(), 'setup-id-'))
+  const envFile = join(dir, '.env')
+  try {
+    const { code, output } = await runSetup({
+      TELEGRAM_BOT_TOKEN: fake.token,
+      TELEGRAM_API_BASE: fake.baseUrl,
+      ENV_FILE: envFile,
+      BOT_NAME: 'Newsroom Agent',
+      BOT_DESCRIPTION: 'Writes articles on request',
+      BOT_ABOUT: 'my agent, in my pocket',
+    })
+    assert.equal(code, 0, output)
+    assert.deepEqual(fake.callsFor('setMyName')[0].params, { name: 'Newsroom Agent' })
+    assert.deepEqual(fake.callsFor('setMyDescription')[0].params, {
+      description: 'Writes articles on request',
+    })
+    assert.deepEqual(fake.callsFor('setMyShortDescription')[0].params, {
+      short_description: 'my agent, in my pocket',
+    })
+    assert.match(readFileSync(envFile, 'utf8'), /BOT_NAME=Newsroom Agent/)
+  } finally {
+    await fake.stop()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('setup rejects a bad token and writes nothing', async () => {
   const fake = new FakeBotApi()
   await fake.start()

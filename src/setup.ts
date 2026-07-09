@@ -38,6 +38,25 @@ try {
   process.exit(1)
 }
 
+// Optional identity: display name and descriptions are the only things the
+// Bot API lets a bot change about itself (avatar and username are not).
+const identity: Array<[string, string, (value: string) => Promise<boolean>]> = [
+  ['BOT_NAME', 'name', (value) => api.setMyName(value)],
+  ['BOT_DESCRIPTION', 'description', (value) => api.setMyDescription(value)],
+  ['BOT_ABOUT', 'short description', (value) => api.setMyShortDescription(value)],
+]
+for (const [key, label, apply] of identity) {
+  const value = process.env[key]
+  if (value === undefined || value.length === 0) continue
+  try {
+    await apply(value)
+    console.log(`applied ${label}: ${value}`)
+  } catch (error) {
+    // Telegram rate-limits identity changes; a miss should not undo setup.
+    console.error(`warning: could not apply ${label}: ${String(error)}`)
+  }
+}
+
 const lines = [
   '# telegram-bot-skill config. Contains a secret; keep out of git (mode 600).',
   `TELEGRAM_BOT_TOKEN=${token}`,
@@ -46,6 +65,9 @@ const lines = [
 // Carry through whatever else was declared at setup time, so one command
 // captures the whole intended configuration.
 for (const key of [
+  'BOT_NAME',
+  'BOT_DESCRIPTION',
+  'BOT_ABOUT',
   'OWNER_ID',
   'TRUSTED_IDS',
   'GUEST_IDS',

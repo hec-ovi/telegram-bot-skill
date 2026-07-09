@@ -87,4 +87,18 @@ export class TelegramApi {
   setMessageReaction(params: SetMessageReactionParams): Promise<boolean> {
     return this.call<boolean>('setMessageReaction', params)
   }
+
+  // Bot identity. The username is immutable and the avatar is BotFather-only;
+  // these three are everything the Bot API lets a bot change about itself.
+  setMyName(name: string): Promise<boolean> {
+    return this.call<boolean>('setMyName', { name })
+  }
+
+  setMyDescription(description: string): Promise<boolean> {
+    return this.call<boolean>('setMyDescription', { description })
+  }
+
+  setMyShortDescription(shortDescription: string): Promise<boolean> {
+    return this.call<boolean>('setMyShortDescription', { short_description: shortDescription })
+  }
 }
