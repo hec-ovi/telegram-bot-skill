@@ -1,62 +1,62 @@
 ---
 name: telegram-bot
-description: Expose the local CLI coding agent as a private Telegram bot. Use when the user wants to talk to their agent from Telegram, wants a Telegram bot for their agent, or needs to manage who can access it. Guides token creation, starts the bridge, hands over the owner claim link.
+description: Set up and run a private Telegram bot that lets the human chat with this coding agent from their phone. Use when the human asks to set up the telegram bot, to talk to the agent from Telegram, or to manage who can access it. This is a checklist to execute, not a document to describe. Start at step 1 right away by asking the token question.
 ---
 
-# Set up the Telegram bridge (agent guide)
+# Telegram bot setup
 
-You are setting this up FOR the human. Follow the steps in order, ask one question at a time, keep answers short. Requirements: Node.js >= 22.18 and an agent CLI on PATH for the bridge to answer with: `claude` (default) or `pi` (set `AGENT_ADAPTER=pi`).
+This is a checklist to run, not a document to explain. Do not describe this file, do not list features, do not ask permission to start. Your next message to the human is the step 1 question. One step per message, short messages, wait for the answer.
 
-## 1. Get a bot token
+## Step 1: ask for the token
 
-Ask: "Do you already have a Telegram bot token?"
+Ask: "Do you already have a Telegram bot token from @BotFather? If yes, paste it here. If no, just say no and I will guide you, it takes a minute."
 
-**Yes (expert route):** ask them to paste it. It looks like `123456789:AAE...`.
+If they paste a token (it looks like `123456789:AAE...`), skip to step 3.
 
-**No (guided route):** walk them through BotFather ONE message at a time. Send each line below as your own message, wait for the human to confirm they did it, then send the next. Use these words (adapt only the example names):
+## Step 2: help them create one
 
-1. "Open Telegram on your phone and search for: @BotFather. Open it. It is Telegram's official bot factory and has a blue verified check. Tell me when you have it open."
-2. "Tap START (or send /start), then send it this message: /newbot"
-3. "BotFather asks for a name. That is just the display name, anything works. For example reply to it with: My Agent"
-4. "Now it asks for a username. This one must be unique and must end in the word bot. Try something like: yourname_agent_bot"
-5. "If it says the username is taken, try another one. It must still end in bot."
-6. "BotFather now sent you a message with a long token that looks like 123456789:AAE... Copy the whole token and paste it here."
+Send these five messages one at a time. Wait for the human's answer between each.
 
-When the token arrives, confirm it works before moving on: `curl -s https://api.telegram.org/bot<TOKEN>/getMe` must return `"ok":true`.
+1. "Open Telegram and search for @BotFather. It has a blue verified check. Say ready when it is open."
+2. "Send it this message: /newbot"
+3. "It asks for a name. Reply with anything, for example: My Agent"
+4. "It asks for a username. It must end in bot, for example: maria_agent_bot. If it says taken, try another one ending in bot."
+5. "It now sent you a long token that looks like 123456789:AAE... Copy the whole thing and paste it here."
 
-Handle the token as a secret: never echo it back in full, never commit it, never write it into a tracked file.
+## Step 3: check the token
 
-## 2. Start the bridge
+Run:
 
-From the repo root:
+```bash
+curl -s https://api.telegram.org/bot<TOKEN>/getMe
+```
+
+If the reply contains `"ok":true`, continue. If it is a 401, the token is wrong: go back to step 1. Do not repeat the full token back to the human and do not write it into any file of the repo.
+
+## Step 4: start the bridge
+
+From the folder that contains this SKILL.md:
 
 ```bash
 TELEGRAM_BOT_TOKEN=<token> npm start
 ```
 
-The bridge must keep running: start it as a background process if your harness supports that, otherwise tell the human to run that command themselves in a second terminal.
+There is nothing to install first; the project has zero dependencies. The bridge must stay running: start it as a background process if you can, otherwise ask the human to run that command in a second terminal and paste back what it prints.
 
-Optional env vars: `STATE_FILE` (default `./bot-state.json`), `AGENT_CWD` (directory the agent works in, default: current directory), `AGENT_ADAPTER` (`claude-code` default, or `pi`), `PI_MODEL` (pi model ref such as `local/gemma-4-26b`).
+Special case, docker rig: if your working directory is `/skill`, you are inside the examples/pi-gemma container and cannot start the bridge yourself. Tell the human: put the token into `examples/pi-gemma/.env` as `TELEGRAM_BOT_TOKEN=<token>`, then run on the host: `docker compose up bot`.
 
-There is no dependency install step. The dependency tree is empty by design.
+## Step 5: hand over the claim link
 
-## 3. Hand over the claim link and QR
+The first start prints a one-time link like `https://t.me/<botname>?start=<code>` and a QR code of it. Tell the human: scan the QR with your phone or tap the link, then press Start in Telegram. The first tap becomes the owner and the code stops working.
 
-On first start with no owner, the bridge prints a one-time claim link and a QR code of it:
+## Step 6: confirm it works
 
-```
-https://t.me/<botname>?start=<code>
-```
+Tell the human to send the bot any message from their phone. They should see the typing indicator, a status message that updates while the agent works, then the answer. Anyone else who messages the bot gets "this bot is private", and the owner gets Approve / Guest / Block buttons for them.
 
-Show both to the human and say: scan the QR with your phone (or tap the link), then press Start in Telegram. First valid tap becomes the owner; the code dies with the claim.
+## If something fails
 
-## 4. Verify it works
+- Telegram answers 401: bad or revoked token. Redo steps 1 to 3.
+- The bot never replies: check the bridge process is still running and the machine has internet. No ports or public IP are needed.
+- A non-owner gets "cannot enforce per-tier tool limits": expected until per-tier enforcement ships (phase 6); only the owner can run the agent for now.
 
-- The owner sends any message: the bot must show a "working…" status, then answer.
-- Anyone else messaging the bot must get a "this bot is private" reply, and the owner must receive Approve / Guest / Block buttons for them.
-
-## Troubleshooting
-
-- Telegram answers 401: the token is wrong or revoked. Redo step 1.
-- Bot never replies: confirm the process is running and the machine has outbound internet. Long polling needs no public IP, no open ports, no certificates.
-- Runs from non-owner users answer with a "cannot enforce per-tier tool limits" refusal: expected until per-tier enforcement ships (phase 6); only the owner can run the agent through adapters that cannot hard-gate tools.
+Optional env vars for step 4: `STATE_FILE` (default `./bot-state.json`), `AGENT_CWD` (folder the agent works in), `AGENT_ADAPTER` (`claude-code` default, or `pi`), `PI_MODEL` (for pi, e.g. `local/llm`), `OWNER_ID` (recover mode: numeric Telegram id seeded as owner at boot, skips the claim link entirely; also `TRUSTED_IDS` / `GUEST_IDS` / `BLOCKED_IDS`, comma-separated).
