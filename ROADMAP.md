@@ -15,7 +15,7 @@ Repo, MIT license, README stub, research store. 2026-07-09.
 
 ARCHITECTURE.md with module boundaries and each contract's in/out. This roadmap.
 
-## Phase 2: telegram client
+## Phase 2: telegram client (done)
 
 `src/telegram`: thin client over `fetch` against the official Bot API, base URL injectable for tests. `getUpdates` long-poll loop with offset tracking and crash-safe resume, `sendMessage`, `editMessageText`, `sendChatAction`, `answerCallbackQuery`, `setMessageReaction`, `getMe`. Outbound queue that honors 429 `retry_after`. Chunking near the 4096-char cap on paragraph or word boundaries. HTML parse mode with `<` `>` `&` escaping.
 Tests: `node:test` plus a local `node:http` fake of the Bot API, exercised end to end through the polling loop.

@@ -21,7 +21,7 @@ Each module is isolated, speaks only through its contract, and is replaceable on
 
 Zero-dep Bot API client.
 In: bot token, injectable base URL (tests point it at a local fake).
-Out: normalized `IncomingMessage { chatId, userId, text, callbackData?, messageId }`.
+Out: normalized `IncomingMessage`, a discriminated union: `{ kind: 'text', chatId, userId, messageId, text }` or `{ kind: 'callback', chatId, userId, messageId, callbackId, callbackData? }` (the callback id is what `answerCallbackQuery` needs).
 Accepts: `OutgoingEffect` (sendText, editText, chatAction, reaction, inlineKeyboard, answerCallback).
 Owns: the long-poll loop with offset tracking, 429 `retry_after` backoff, chunking near the 4096-char cap on paragraph boundaries, HTML-mode escaping of `<` `>` `&`.
 Knows nothing about agents or tiers.
