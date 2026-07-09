@@ -5,13 +5,23 @@ description: Set up and run a private Telegram bot that lets the human chat with
 
 # Telegram bot setup
 
-This is a checklist to run, not a document to explain. Do not describe this file, do not list features, do not ask permission to start. Your next message to the human is the step 1 question. One step per message, short messages, wait for the answer.
+This is a checklist to run, not a document to explain. Do not describe this file, do not list features, do not ask permission to start. Begin at step 0. One step per message, short messages, wait for the answer.
+
+## Step 0: is it already configured?
+
+Check for an existing config before asking anything. If a `.env` file exists next to this SKILL.md with a `TELEGRAM_BOT_TOKEN` value, verify it without ever printing it:
+
+```bash
+curl -s "https://api.telegram.org/bot$(grep '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2-)/getMe"
+```
+
+If the reply contains `"ok":true`, everything is already set up. Tell the human which bot it is (the `username` in that reply) and go straight to step 4 (start it) and step 6 (confirm). Only continue to step 1 when there is no usable token.
 
 ## Step 1: ask for the token
 
-Ask: "Do you already have a Telegram bot token from @BotFather? If yes, paste it here. If no, just say no and I will guide you, it takes a minute."
+Ask: "Do you already have a Telegram bot token from @BotFather? If yes: safest is to NOT paste it in this chat. Copy .env.example to .env, put the token after TELEGRAM_BOT_TOKEN=, save, and say done. (Pasting it here works too if you prefer.) If no, just say no and I will guide you, it takes a minute."
 
-If they paste a token (it looks like `123456789:AAE...`), skip to step 3.
+If they say done (secure route), skip to step 3. If they paste a token (it looks like `123456789:AAE...`), also skip to step 3.
 
 ## Step 2: help them create one
 
@@ -21,27 +31,35 @@ Send these five messages one at a time. Wait for the human's answer between each
 2. "Send it this message: /newbot"
 3. "It asks for a name. Reply with anything, for example: My Agent"
 4. "It asks for a username. It must end in bot, for example: maria_agent_bot. If it says taken, try another one ending in bot."
-5. "It now sent you a long token that looks like 123456789:AAE... Copy the whole thing and paste it here."
+5. "It now sent you a long token that looks like 123456789:AAE... That token is a SECRET, whoever has it controls your bot. Safest: copy .env.example to .env, put it after TELEGRAM_BOT_TOKEN=, save, and say done. Or paste it here and I will store it for you."
 
-## Step 3: check the token
+## Step 3: check and store the token
 
-Run:
+The token is a secret: never repeat it back to the human, never commit it, it lives only in `.env` (gitignored).
+
+If the human filled `.env` themselves (secure route), validate and complete the file:
 
 ```bash
-curl -s https://api.telegram.org/bot<TOKEN>/getMe
+npm run setup
 ```
 
-If the reply contains `"ok":true`, continue. If it is a 401, the token is wrong: go back to step 1. Do not repeat the full token back to the human and do not write it into any file of the repo.
+If the human pasted the token in chat instead, store and validate in one go:
+
+```bash
+TELEGRAM_BOT_TOKEN=<token> npm run setup
+```
+
+Either way, setup checks the token against Telegram, writes `.env` with file mode 600, and records the bot's username. If it fails with 401, the token is wrong: go back to step 1.
 
 ## Step 4: start the bridge
 
 From the folder that contains this SKILL.md:
 
 ```bash
-TELEGRAM_BOT_TOKEN=<token> npm start
+npm start
 ```
 
-There is nothing to install first; the project has zero dependencies. The bridge must stay running: start it as a background process if you can, otherwise ask the human to run that command in a second terminal and paste back what it prints.
+It reads `.env` by itself, so this exact command also works after any reboot or in a fresh session: no arguments, no reconfiguration. There is nothing to install; the project has zero dependencies. The bridge must stay running: start it as a background process if you can, otherwise ask the human to run it in a second terminal and paste back what it prints.
 
 Special case, docker rig: if your working directory is `/skill`, you are inside the examples/pi-gemma container and cannot start the bridge yourself. Tell the human: put the token into `examples/pi-gemma/.env` as `TELEGRAM_BOT_TOKEN=<token>`, then run on the host: `docker compose up bot`.
 
