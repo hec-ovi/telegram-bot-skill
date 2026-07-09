@@ -55,6 +55,10 @@ First start prints a one-time claim link (`https://t.me/yourbot?start=...`) plus
 | `AGENT_CWD` | no | current dir | Directory the agent works in |
 | `AGENT_ADAPTER` | no | `claude-code` | Which agent answers: `claude-code` or `pi` |
 | `PI_MODEL` | no | | Pi model ref, e.g. `local/gemma-4-26b` |
+| `OWNER_ID` | no | | Recover mode: numeric Telegram id seeded as owner at boot |
+| `TRUSTED_IDS` / `GUEST_IDS` / `BLOCKED_IDS` | no | | Recover mode: comma-separated ids seeded into tiers |
+
+Recover mode means the state file is never precious: wipe it, redeploy, spin up a fresh machine, and a boot with `OWNER_ID` set comes up already owned and usable, no claim link. Env is the source of truth for the ids it names (a stale stored owner gets demoted to trusted).
 
 ### Fully local, no cloud
 

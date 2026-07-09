@@ -130,6 +130,80 @@ test('full conversation: claim, stranger, approval, agent runs, block holds', as
   }
 })
 
+test('recover mode: env seed makes a fresh, stateless boot immediately owned and ready', async () => {
+  const fake = new FakeBotApi()
+  await fake.start()
+  const dir = mkdtempSync(join(tmpdir(), 'bot-seed-'))
+  try {
+    const api = new TelegramApi(fake.token, { baseUrl: fake.baseUrl })
+    const store = await FileStore.open(join(dir, 'state.json')) // no file: simulated wipe
+    const adapter = new FakeAdapter([
+      { kind: 'text', text: 'seeded answer' },
+      { kind: 'done', sessionId: 's1' },
+    ])
+    const logs: string[] = []
+    const bot = createBot({
+      api,
+      store,
+      adapter,
+      cwd: dir,
+      seed: { ownerId: OWNER, trusted: [FRIEND], blocked: [TROLL] },
+      log: (line) => logs.push(line),
+      presence: { typingIntervalMs: 100000, editThrottleMs: 0 },
+    })
+    await bot.bootstrap()
+
+    // No claim dance: ownership came from env.
+    assert.ok(!logs.some((line) => line.includes('?start=')), 'no claim link when seeded')
+    assert.equal(store.data.claimCode, undefined)
+    assert.equal(store.data.users[String(OWNER)].state, 'owner')
+    assert.equal(store.data.users[String(FRIEND)].state, 'trusted')
+    assert.equal(store.data.users[String(TROLL)].state, 'blocked')
+
+    // The seeded owner can use the agent on the very first message.
+    await bot.handleUpdate(fake.pushTextMessage({ chatId: OWNER, userId: OWNER, text: 'hi' }))
+    await wait(80)
+    assert.equal(adapter.runs.length, 1)
+
+    // Seeded blocked users stay silent, no pending flow.
+    await bot.handleUpdate(fake.pushTextMessage({ chatId: TROLL, userId: TROLL, text: 'hey' }))
+    await wait(40)
+    const trollTexts = fake
+      .callsFor('sendMessage')
+      .filter((call) => call.params.chat_id === TROLL)
+    assert.equal(trollTexts.length, 0)
+  } finally {
+    await fake.stop()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('recover mode: the env owner wins over a stale stored owner', async () => {
+  const fake = new FakeBotApi()
+  await fake.start()
+  const dir = mkdtempSync(join(tmpdir(), 'bot-seed2-'))
+  try {
+    const api = new TelegramApi(fake.token, { baseUrl: fake.baseUrl })
+    const store = await FileStore.open(join(dir, 'state.json'))
+    await store.update((data) => {
+      data.users['999'] = { state: 'owner', chatId: 999, addedAt: 'x' }
+    })
+    const bot = createBot({
+      api,
+      store,
+      adapter: new FakeAdapter([]),
+      cwd: dir,
+      seed: { ownerId: OWNER },
+    })
+    await bot.bootstrap()
+    assert.equal(store.data.users[String(OWNER)].state, 'owner')
+    assert.equal(store.data.users['999'].state, 'trusted', 'old owner demoted, not deleted')
+  } finally {
+    await fake.stop()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('non-owner tiers are refused when the adapter cannot hard-gate tools', async () => {
   const fake = new FakeBotApi()
   await fake.start()

@@ -5,12 +5,16 @@
 //   AGENT_ADAPTER       optional: claude-code (default) | pi
 //   PI_MODEL            optional, pi model ref, e.g. local/gemma-4-26b
 //   PI_SESSION_DIR      optional, where pi session files live
+//   OWNER_ID            optional, numeric Telegram id seeded as owner (recover mode)
+//   TRUSTED_IDS         optional, comma-separated ids seeded as trusted
+//   GUEST_IDS           optional, comma-separated ids seeded as guest
+//   BLOCKED_IDS         optional, comma-separated ids seeded as blocked
 
 import { dirname, join, resolve } from 'node:path'
 import { ClaudeCodeAdapter } from './agents/claude-code/adapter.ts'
 import type { AgentAdapter } from './agents/contract.ts'
 import { PiAdapter } from './agents/pi/adapter.ts'
-import { createBot } from './app.ts'
+import { createBot, type SeedUsers } from './app.ts'
 import { FileStore } from './store/store.ts'
 import { TelegramApi } from './telegram/api.ts'
 
@@ -35,12 +39,32 @@ if (adapterName === 'claude-code') {
   process.exit(1)
 }
 
+function parseIds(value: string | undefined): number[] | undefined {
+  if (value === undefined || value.trim().length === 0) return undefined
+  const ids = value
+    .split(/[\s,]+/)
+    .filter((part) => part.length > 0)
+    .map(Number)
+    .filter(Number.isFinite)
+  return ids.length > 0 ? ids : undefined
+}
+
+const ownerId = parseIds(process.env.OWNER_ID)?.[0]
+const seed: SeedUsers = {
+  ownerId,
+  trusted: parseIds(process.env.TRUSTED_IDS),
+  guest: parseIds(process.env.GUEST_IDS),
+  blocked: parseIds(process.env.BLOCKED_IDS),
+}
+const hasSeed = Object.values(seed).some((value) => value !== undefined)
+
 const store = await FileStore.open(stateFile)
 const bot = createBot({
   api: new TelegramApi(token),
   store,
   adapter,
   cwd: process.env.AGENT_CWD ?? process.cwd(),
+  seed: hasSeed ? seed : undefined,
   log: console.log,
 })
 

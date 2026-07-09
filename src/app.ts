@@ -8,16 +8,27 @@ import { decide } from './gate/gate.ts'
 import { qrMatrix, qrToTerminal } from './qr/qr.ts'
 import type { PresenceOptions } from './presence/presence.ts'
 import { Runner } from './runner/runner.ts'
-import type { FileStore, UserRecord } from './store/store.ts'
+import type { FileStore, UserRecord, UserState } from './store/store.ts'
 import type { TelegramApi } from './telegram/api.ts'
 import { normalizeUpdate, pollUpdates, type PollerOptions } from './telegram/poller.ts'
 import type { IncomingMessage, Update } from './telegram/types.ts'
+
+// Recover mode: declared access seeded from env at every boot, so a fresh
+// machine or wiped state file comes up already owned and usable, no claim
+// dance. Env is the source of truth for the ids it names.
+export interface SeedUsers {
+  ownerId?: number
+  trusted?: number[]
+  guest?: number[]
+  blocked?: number[]
+}
 
 export interface BotDeps {
   api: TelegramApi
   store: FileStore
   adapter: AgentAdapter
   cwd: string
+  seed?: SeedUsers
   log?: (line: string) => void
   presence?: PresenceOptions
   poller?: PollerOptions
@@ -52,6 +63,31 @@ export function createBot(deps: BotDeps) {
 
   async function bootstrap(): Promise<void> {
     const me = await deps.api.getMe()
+    const seed = deps.seed
+    if (seed !== undefined) {
+      await deps.store.update((data) => {
+        const upsert = (id: number, state: UserState) => {
+          const existing = data.users[String(id)]
+          data.users[String(id)] = {
+            state,
+            // Private-chat id equals the user id, which is all seeding needs.
+            chatId: existing?.chatId ?? id,
+            name: existing?.name,
+            addedAt: existing?.addedAt ?? new Date().toISOString(),
+          }
+        }
+        if (seed.ownerId !== undefined) {
+          for (const [id, user] of Object.entries(data.users)) {
+            if (user.state === 'owner' && Number(id) !== seed.ownerId) user.state = 'trusted'
+          }
+          upsert(seed.ownerId, 'owner')
+          delete data.claimCode
+        }
+        for (const id of seed.trusted ?? []) if (id !== seed.ownerId) upsert(id, 'trusted')
+        for (const id of seed.guest ?? []) if (id !== seed.ownerId) upsert(id, 'guest')
+        for (const id of seed.blocked ?? []) if (id !== seed.ownerId) upsert(id, 'blocked')
+      })
+    }
     if (findOwner() === undefined) {
       if (deps.store.data.claimCode === undefined) {
         await deps.store.update((data) => {
