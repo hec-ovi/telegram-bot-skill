@@ -1,13 +1,15 @@
 # telegram-bot-skill
 
-Expose your local CLI coding agent (Claude Code first) as a Telegram bot, so you can talk to the agent running on your own machine from your phone.
+Expose a local CLI coding agent as a Telegram bot, so you can talk to the agent running on your own machine from your phone.
 
-Three problems this focuses on:
+Design rules:
 
-- You never know if the bot is thinking or dead. The bridge keeps Telegram's typing indicator alive and posts status while the agent works.
-- Strangers are hard to handle. A deterministic, non-agentic gate sits in front of the agent: unknown users land in a pending queue, the owner approves them with one tap, and every user gets a tier.
-- A convinced model is not a security boundary. Tiers map to agent-harness config (permission rules, hooks), so a blocked tool stays blocked no matter what a chat user talks the agent into.
+- Zero dependencies. Node 24 stdlib only: `fetch` against the official Bot API, `node:test` for tests, native type stripping for TypeScript. Empty dependency tree, no framework underneath.
+- Agent-agnostic. The core speaks one adapter contract. Claude Code is the first adapter; opencode, Codex CLI, Gemini CLI and any other harness with a headless mode plug in the same way.
+- You always know what the bot is doing. The typing indicator stays alive, one status message tracks progress, the answer arrives separately.
+- Strangers hit a gate, not the agent. A deterministic, non-agentic layer holds unknown users in a pending queue until the owner approves them into a tier with one tap.
+- A convinced model is not a security boundary. Tiers map to harness-level config (permission rules, hooks), so a blocked tool stays blocked no matter what a chat user talks the agent into.
 
-Status: early. Research and roadmap phase, code lands next.
+Status: contracts and roadmap are in (see ARCHITECTURE.md and ROADMAP.md), code lands next.
 
 License: MIT.
