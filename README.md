@@ -60,6 +60,8 @@ First start prints a one-time claim link (`https://t.me/yourbot?start=...`) plus
 
 Recover mode means the state file is never precious: wipe it, redeploy, spin up a fresh machine, and a boot with `OWNER_ID` set comes up already owned and usable, no claim link. Env is the source of truth for the ids it names (a stale stored owner gets demoted to trusted).
 
+For a bot that outlives reboots, run it under something that restarts it: the [examples/pi-gemma](examples/pi-gemma) rig does this with `restart: unless-stopped` (a PC reboot brings it back listening, state intact); for bare `npm start`, use your process manager of choice (a systemd unit works fine).
+
 ### Fully local, no cloud
 
 The same bridge runs on a local model: the [Pi coding agent](https://github.com/earendil-works/pi) against any llama.cpp / OpenAI-compatible server. [examples/pi-gemma](examples/pi-gemma) brings up the whole thing with one compose file and one `.env`: llama.cpp on Vulkan serving your GGUF, Pi wired to it, the bridge on top. That rig is the project's reference test bench on purpose: a small local model driven by a tiny CLI is the floor, and everything is verified against the floor. A stronger CLI (Claude Code, Codex, opencode, Hermes) on a bigger model has strictly more capability behind the same bridge, never less.

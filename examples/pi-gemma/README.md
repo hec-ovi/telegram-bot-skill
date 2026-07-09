@@ -27,10 +27,18 @@ Tell Pi: `set up the telegram bot skill for me`. It reads SKILL.md and walks you
 **Step 2, start the bridge:**
 
 ```bash
-docker compose up bot
+docker compose up bot        # first time: watch the claim link + QR appear
 ```
 
-First boot prints the one-time owner claim link and a QR code. Scan it with your phone, tap Start, you are the owner.
+First boot prints the one-time owner claim link and a QR code. Scan it with your phone, tap Start, you are the owner. (With `OWNER_ID` set in `.env` there is no claim step at all; it boots owned.)
+
+For keeps, run it detached:
+
+```bash
+docker compose up -d bot
+```
+
+Both `llm` and `bot` carry `restart: unless-stopped`, so after a PC reboot the Docker daemon brings the whole rig back by itself: token and access re-read from the container env, poll offset and per-chat sessions from the `data` volume. It resumes listening with no human involved; `docker compose logs -f bot` to peek.
 
 **Step 3, talk to it** from your phone: typing indicator, a working-status message that updates while Pi and Gemma think, then the answer. Follow-ups resume the same per-chat session. Anyone else who messages the bot waits at the gate for your Approve / Guest / Block tap.
 

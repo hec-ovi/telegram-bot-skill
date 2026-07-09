@@ -73,9 +73,10 @@ services:
       - rig
 
   # The bridge itself, answering Telegram through pi + the local model.
-  #   docker compose up bot
+  #   docker compose up -d bot     (detached: survives PC reboots)
   bot:
     build: .
+    restart: unless-stopped
     working_dir: /skill
     command: ["npm", "start"]
     depends_on:
