@@ -25,6 +25,17 @@ const CONFIG_KEYS = [
   'STATE_FILE',
 ]
 
+// "123, 456 789" -> [123, 456, 789]; undefined when nothing parses.
+export function parseIds(value: string | undefined): number[] | undefined {
+  if (value === undefined || value.trim().length === 0) return undefined
+  const ids = value
+    .split(/[\s,]+/)
+    .filter((part) => part.length > 0)
+    .map(Number)
+    .filter(Number.isFinite)
+  return ids.length > 0 ? ids : undefined
+}
+
 export function loadEnvConfig(cwd: string = process.cwd()): string | undefined {
   for (const key of CONFIG_KEYS) {
     if (process.env[key] === '') delete process.env[key]

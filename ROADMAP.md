@@ -58,6 +58,8 @@ Per-user rate limits, append-only audit log (who asked what, which tier, what wa
 
 SKILL.md written so that any harness agent, including a small local model, can install and configure the bridge by following a single file. npm publish with the empty dependency tree. CHANGELOG.
 
-## Phase 11: later
+## Phase 11: MCP surface (shipped 2026-07-10)
 
-Local MCP server exposing bridge control (approve user, change tier, read audit log) as tools. Group and forum-topic support. `sendMessageDraft` / rich-message streaming where the Bot API offers it, with `editMessageText` as the fallback.
+`mcp/` turns the bridge into an MCP server where the client session itself is the answering agent. Zero-dep JSON-RPC 2.0 over stdio (`mcp/rpc.ts`, with cancellation and progress ticks), the same gate/store/telegram modules behind it (`mcp/bridge.ts` plugs into `createBot`'s `onRun` hook). Tools: `wait_for_message` (blocking pull, queue-backed), `send_message` (chunked), `list_users`, `set_user_tier`, `bridge_status` (carries the claim link while unclaimed). Push mode via `--channel`: declares the `claude/channel` capability and emits `notifications/claude/channel`, so Claude Code v2.1.80+ (channels research preview, session started with `--dangerously-load-development-channels server:telegram`) injects messages straight into the open session without interrupting running work. `.mcp.json` ships at the repo root with a 10-minute tool timeout.
+Verified live against the fake Bot API with claude-haiku as the client agent, plus 10 end-to-end protocol tests that spawn the real server over stdio.
+Still open here: permission relay over the channel, group and forum-topic support, `sendMessageDraft` / rich-message streaming where the Bot API offers it.

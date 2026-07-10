@@ -8,7 +8,7 @@ import { decide } from './gate/gate.ts'
 import { qrMatrix, qrToTerminal } from './qr/qr.ts'
 import type { PresenceOptions } from './presence/presence.ts'
 import { Runner } from './runner/runner.ts'
-import type { FileStore, UserRecord, UserState } from './store/store.ts'
+import type { FileStore, Tier, UserRecord, UserState } from './store/store.ts'
 import type { TelegramApi } from './telegram/api.ts'
 import { normalizeUpdate, pollUpdates, type PollerOptions } from './telegram/poller.ts'
 import type { IncomingMessage, Update } from './telegram/types.ts'
@@ -23,15 +23,21 @@ export interface SeedUsers {
   blocked?: number[]
 }
 
+export type TextMessage = Extract<IncomingMessage, { kind: 'text' }>
+
 export interface BotDeps {
   api: TelegramApi
   store: FileStore
-  adapter: AgentAdapter
+  adapter?: AgentAdapter
   cwd: string
   seed?: SeedUsers
   log?: (line: string) => void
   presence?: PresenceOptions
   poller?: PollerOptions
+  // Alternate consumer for gate-approved messages: when set, the built-in
+  // runner/adapter path is bypassed and messages land here instead. The
+  // MCP surface uses this to hand messages to the connected client.
+  onRun?: (message: TextMessage, tier: Tier) => void
 }
 
 export const TEXT = {
@@ -44,13 +50,19 @@ export const TEXT = {
 
 export function createBot(deps: BotDeps) {
   const log = deps.log ?? (() => {})
-  const runner = new Runner({
-    adapter: deps.adapter,
-    transport: deps.api,
-    store: deps.store,
-    cwd: deps.cwd,
-    presence: deps.presence,
-  })
+  if (deps.adapter === undefined && deps.onRun === undefined) {
+    throw new Error('createBot needs an adapter or an onRun handler')
+  }
+  const runner =
+    deps.adapter === undefined
+      ? undefined
+      : new Runner({
+          adapter: deps.adapter,
+          transport: deps.api,
+          store: deps.store,
+          cwd: deps.cwd,
+          presence: deps.presence,
+        })
 
   const send = (chatId: number, text: string) =>
     deps.api.sendMessage({ chat_id: chatId, text })
@@ -196,8 +208,12 @@ export function createBot(deps: BotDeps) {
 
       case 'run': {
         if (message.kind !== 'text') return
+        if (deps.onRun !== undefined) {
+          deps.onRun(message, decision.tier)
+          return
+        }
         // Fire and forget: the poll loop must not wait on agent runs.
-        void runner.enqueue(message.chatId, message.text, decision.tier)
+        void runner!.enqueue(message.chatId, message.text, decision.tier)
         return
       }
     }

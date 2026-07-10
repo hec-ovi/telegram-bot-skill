@@ -100,6 +100,10 @@ BOT_NAME="My Agent" BOT_DESCRIPTION="What this bot does" BOT_ABOUT="short profil
 - The @username can never be changed; that would mean creating a new bot.
 - The avatar cannot be set through the Bot API. Guide the human: open @BotFather, send `/setuserpic`, pick the bot, then send it the photo.
 
+## Optional: answer from this session instead (MCP)
+
+`npm run bg` spawns a fresh headless agent per message. The alternative surface: this very session answers, through the repo's `.mcp.json` (server `telegram`). Stop any running bridge first (`npm run stop`; one token allows one poller), make sure your harness loaded the MCP server, then serve: call `wait_for_message`, do what the returned message asks, answer with `send_message` to the same chat_id, repeat. `bridge_status` has the claim link while the bot is unclaimed; `list_users` / `set_user_tier` manage access. Push mode (messages inject themselves, no wait loop) exists for Claude Code v2.1.80+; see the README's MCP section.
+
 ## If something fails
 
 - Telegram answers 401: bad or revoked token. Redo steps 1 to 3.

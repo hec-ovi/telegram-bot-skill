@@ -59,6 +59,17 @@ Flat JSON files with atomic writes: users and tiers, pending approvals, chat-to-
 
 Composition root. Takes gate-approved messages, resolves the tier's policy, invokes the adapter, feeds presence, persists session ids. One active run per chat, later messages queue behind it. Refuses to route non-owner tiers to adapters that cannot enforce `toolGating: 'hard'`.
 
-## Future surfaces
+## MCP surface
 
-SKILL.md packaging (phase 10) and a local MCP server (phase 11) sit on top of runner and gate, not inside them. They are consumers of the same contracts.
+`mcp/` is a consumer of the same contracts, not a second pipeline. `mcp/bridge.ts` builds the standard bot through `createBot` and plugs into its `onRun` hook, so telegram, gate, and store behave exactly as under `npm start`; only the last hop changes: the gate-approved message goes to the connected MCP client (your live coding session) instead of a spawned adapter. `mcp/rpc.ts` is a zero-dep newline-delimited JSON-RPC 2.0 endpoint with request dispatch, cancellation (`notifications/cancelled`), and progress ticks. `mcp/server.ts` wires the two and defines the tools: `wait_for_message`, `send_message`, `list_users`, `set_user_tier`, `bridge_status`.
+
+Two duplex modes:
+
+- **Pull** (default, any MCP client): `wait_for_message` blocks until the gate approves a message, backed by a queue so nothing is lost while the agent works.
+- **Push** (`--channel` arg): declares the experimental `claude/channel` capability and emits `notifications/claude/channel`, which Claude Code (v2.1.80+, channels research preview) injects into the running session as `<channel>` events. Messages arriving mid-task queue in the session and are delivered on the next turn, so they never interrupt running work.
+
+In both modes the gate rule holds: no message text reaches the client before `decide` says allow.
+
+## Other surfaces
+
+SKILL.md packaging (phase 10) sits on top the same way: a consumer of the contracts, not a resident of them.

@@ -15,7 +15,7 @@ import { ClaudeCodeAdapter } from './agents/claude-code/adapter.ts'
 import type { AgentAdapter } from './agents/contract.ts'
 import { PiAdapter } from './agents/pi/adapter.ts'
 import { createBot, type SeedUsers } from './app.ts'
-import { loadEnvConfig } from './config.ts'
+import { loadEnvConfig, parseIds } from './config.ts'
 import { FileStore } from './store/store.ts'
 import { TelegramApi } from './telegram/api.ts'
 
@@ -41,16 +41,6 @@ if (adapterName === 'claude-code') {
 } else {
   console.error(`Unknown AGENT_ADAPTER "${adapterName}". Use claude-code or pi.`)
   process.exit(1)
-}
-
-function parseIds(value: string | undefined): number[] | undefined {
-  if (value === undefined || value.trim().length === 0) return undefined
-  const ids = value
-    .split(/[\s,]+/)
-    .filter((part) => part.length > 0)
-    .map(Number)
-    .filter(Number.isFinite)
-  return ids.length > 0 ? ids : undefined
 }
 
 const ownerId = parseIds(process.env.OWNER_ID)?.[0]

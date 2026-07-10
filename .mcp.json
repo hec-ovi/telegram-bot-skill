@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "telegram": {
+      "command": "node",
+      "args": ["mcp/server.ts"],
+      "timeout": 600000
+    }
+  }
+}
