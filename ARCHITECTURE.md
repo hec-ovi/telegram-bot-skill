@@ -61,7 +61,7 @@ Composition root. Takes gate-approved messages, resolves the tier's policy, invo
 
 ## MCP surface
 
-`mcp/` is a consumer of the same contracts, not a second pipeline. `mcp/bridge.ts` builds the standard bot through `createBot` and plugs into its `onRun` hook, so telegram, gate, and store behave exactly as under `npm start`; only the last hop changes: the gate-approved message goes to the connected MCP client (your live coding session) instead of a spawned adapter. `mcp/rpc.ts` is a zero-dep newline-delimited JSON-RPC 2.0 endpoint with request dispatch, cancellation (`notifications/cancelled`), and progress ticks. `mcp/server.ts` wires the two and defines the tools: `wait_for_message`, `send_message`, `list_users`, `set_user_tier`, `bridge_status`.
+`mcp/` is a consumer of the same contracts, not a second pipeline. `mcp/bridge.ts` builds the standard bot through `createBot` and plugs into its `onRun` hook, so telegram, gate, and store behave exactly as under `npm start`; only the last hop changes: the gate-approved message goes to the connected MCP client (your live coding session) instead of a spawned adapter. `mcp/rpc.ts` is a zero-dep JSON-RPC 2.0 router (request dispatch, cancellation via `notifications/cancelled`, progress ticks) plus the newline-delimited stdio binding; `mcp/http.ts` binds the same router to Streamable HTTP (one JSON-RPC message per POST, 127.0.0.1 only, stateless). `mcp/server.ts` wires it all and defines the tools: `wait_for_message`, `send_message`, `list_users`, `set_user_tier`, `bridge_status`.
 
 Two duplex modes:
 

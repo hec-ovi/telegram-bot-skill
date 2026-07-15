@@ -1,14 +1,21 @@
 // MCP surface: the same private-bot bridge, but the agent that answers is
-// the MCP client itself (the live session that spawned this server) instead
-// of a CLI spawned per message. Stdout is the JSON-RPC channel; every log
-// line goes to stderr.
+// the MCP client itself (the session connected to this server) instead of a
+// CLI spawned per message. Every log line goes to stderr.
+//
+// Two transports:
+//   default       stdio: the client spawns this process (`node mcp/server.ts`,
+//                 wired by the shipped .mcp.json); stdout is the JSON-RPC wire.
+//   --http [port] Streamable HTTP on 127.0.0.1 (default port 8765): start it
+//                 once on the host, then point any MCP client at
+//                 http://127.0.0.1:<port>/mcp. For CLIs that cannot spawn a
+//                 node child (noob's sandbox has no node, for example).
 //
 // Two duplex modes:
 //   default      pull: the agent calls wait_for_message in a loop; messages
 //                that arrive while it works are queued, nothing is lost.
-//   --channel    push: Claude Code channels (research preview, v2.1.80+)
-//                inject approved messages straight into the session. Start
-//                the client with:
+//   --channel    push (stdio only): Claude Code channels (research preview,
+//                v2.1.80+) inject approved messages straight into the
+//                session. Start the client with:
 //                  claude --dangerously-load-development-channels server:telegram
 //
 // Env is identical to `npm start` (reads ./.env): TELEGRAM_BOT_TOKEN,
@@ -22,7 +29,8 @@ import { loadEnvConfig, parseIds } from '../src/config.ts'
 import { FileStore } from '../src/store/store.ts'
 import { TelegramApi } from '../src/telegram/api.ts'
 import { TelegramBridge, type BridgeMessage } from './bridge.ts'
-import { RPC_ERROR, RpcConnection, RpcError, type RequestContext } from './rpc.ts'
+import { serveHttp } from './http.ts'
+import { RPC_ERROR, RpcError, RpcRouter, bindStdio, type RequestContext } from './rpc.ts'
 
 const log = (line: string) => process.stderr.write(`[telegram-mcp] ${line}\n`)
 
@@ -36,6 +44,18 @@ if (token === undefined || token.length === 0) {
 }
 
 const channelMode = process.argv.includes('--channel')
+const httpFlagAt = process.argv.indexOf('--http')
+const httpMode = httpFlagAt !== -1
+const httpPortArg = httpMode ? (process.argv[httpFlagAt + 1] ?? '8765') : ''
+const httpPort = httpMode ? Number(httpPortArg) : 0
+if (httpMode && channelMode) {
+  log('--http and --channel are exclusive: channel pushes ride the stdio connection of the client that spawned this server.')
+  process.exit(1)
+}
+if (httpMode && (!Number.isInteger(httpPort) || httpPort < 0 || httpPort > 65535)) {
+  log(`--http needs a port between 0 and 65535, got ${JSON.stringify(httpPortArg)}.`)
+  process.exit(1)
+}
 
 const stateFileEnv = process.env.STATE_FILE ?? 'bot-state.json'
 const stateFile = isAbsolute(stateFileEnv) ? stateFileEnv : join(repoRoot, stateFileEnv)
@@ -66,6 +86,11 @@ interface Tool {
   inputSchema: object
 }
 
+// Over HTTP the wait holds a plain POST open, and HTTP clients commonly cap a
+// call at 30 s (noob's default), so the default wait stays safely under that.
+// Over stdio the shipped .mcp.json grants 10 minutes.
+const DEFAULT_WAIT_SECONDS = httpMode ? 25 : 50
+
 const WAIT_TOOL: Tool = {
   name: 'wait_for_message',
   description:
@@ -81,9 +106,11 @@ const WAIT_TOOL: Tool = {
         type: 'number',
         minimum: 1,
         maximum: 3600,
-        description:
-          'Seconds to wait before returning timed_out. Default 50, safe with any client. ' +
-          'This repo ships .mcp.json with a 10-minute client timeout, so up to ~590 works here.',
+        description: httpMode
+          ? `Seconds to wait before returning timed_out. Default ${DEFAULT_WAIT_SECONDS}; keep it ` +
+            'under your client\'s per-call timeout (a held POST that outlives it reads as a dead call).'
+          : `Seconds to wait before returning timed_out. Default ${DEFAULT_WAIT_SECONDS}, safe with any client. ` +
+            'This repo ships .mcp.json with a 10-minute client timeout, so up to ~590 works here.',
       },
     },
     required: [],
@@ -162,7 +189,7 @@ const toolError = (message: string) => ({
 
 const DATE_VERSION = /^\d{4}-\d{2}-\d{2}$/
 
-const rpc = new RpcConnection(process.stdin, process.stdout, log)
+const rpc = new RpcRouter(log)
 
 rpc.onRequest('initialize', (params) => {
   // Tools-only servers are compatible across every spec revision to date,
@@ -215,7 +242,8 @@ rpc.onRequest('ping', () => ({}))
 rpc.onRequest('tools/list', () => ({ tools }))
 
 async function waitForMessage(args: any, context: RequestContext) {
-  const requested = typeof args?.timeout_seconds === 'number' ? args.timeout_seconds : 50
+  const requested =
+    typeof args?.timeout_seconds === 'number' ? args.timeout_seconds : DEFAULT_WAIT_SECONDS
   const timeoutSeconds = Math.min(Math.max(requested, 1), 3600)
   const startedAt = Date.now()
   // Progress ticks keep the client's idle watchdog quiet on long waits.
@@ -284,9 +312,17 @@ const shutdown = () => {
   bridge.stop()
   process.exit(0)
 }
-process.stdin.on('close', shutdown)
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
+
+if (httpMode) {
+  // A URL-connected server outlives any one client; only signals stop it.
+  await serveHttp(rpc, httpPort, log)
+} else {
+  bindStdio(rpc, process.stdin, process.stdout)
+  // The spawning client owns this process: its stdin closing is the shutdown.
+  process.stdin.on('close', shutdown)
+}
 
 // The handshake must not wait on Telegram, so the bridge boots in the
 // background; bridge_status reports any startup trouble.

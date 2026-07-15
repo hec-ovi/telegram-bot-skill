@@ -1,16 +1,14 @@
-// Newline-delimited JSON-RPC 2.0 over stdio: the MCP wire format for stdio
-// transports. Zero dependencies, hand-rolled like the rest of the repo; the
-// server side of MCP is small enough that the SDK would be the only package
-// in an otherwise empty tree.
-//
-// Covers what an MCP tool server needs: request dispatch, notifications in
-// both directions, per-request cancellation (notifications/cancelled), and
-// progress ticks for callers that sent a progressToken.
+// JSON-RPC 2.0 dispatch for the MCP tool server, split from its transports:
+// RpcRouter owns handlers, cancellation, and progress; bindStdio speaks the
+// MCP stdio wire (newline-delimited messages), and mcp/http.ts binds the same
+// router to Streamable HTTP. Zero dependencies, hand-rolled like the rest of
+// the repo; the server side of MCP is small enough that the SDK would be the
+// only package in an otherwise empty tree.
 
 import { createInterface } from 'node:readline'
 import type { Readable, Writable } from 'node:stream'
 
-interface RpcMessage {
+export interface RpcMessage {
   jsonrpc?: string
   id?: number | string | null
   method?: string
@@ -48,18 +46,18 @@ export class RpcError extends Error {
   }
 }
 
-export class RpcConnection {
-  #output: Writable
+export class RpcRouter {
   #handlers = new Map<string, RequestHandler>()
   #notifications = new Map<string, (params: any) => void>()
   #inflight = new Map<number | string, AbortController>()
   #log: (line: string) => void
+  // Where server-initiated notifications (progress, channel pushes) go. The
+  // stdio binding points this at stdout; over HTTP there is no return channel
+  // for them, so they stay dropped unless a transport claims them.
+  #notifySink: (message: object) => void = () => {}
 
-  constructor(input: Readable, output: Writable, log: (line: string) => void = () => {}) {
-    this.#output = output
+  constructor(log: (line: string) => void = () => {}) {
     this.#log = log
-    const lines = createInterface({ input, crlfDelay: Infinity })
-    lines.on('line', (line) => this.#receive(line))
   }
 
   onRequest(method: string, handler: RequestHandler): void {
@@ -70,27 +68,17 @@ export class RpcConnection {
     this.#notifications.set(method, handler)
   }
 
+  setNotifySink(sink: (message: object) => void): void {
+    this.#notifySink = sink
+  }
+
   notify(method: string, params?: unknown): void {
-    this.#write({ jsonrpc: '2.0', method, params })
+    this.#notifySink({ jsonrpc: '2.0', method, params })
   }
 
-  #receive(line: string): void {
-    if (line.trim().length === 0) return
-    let message: RpcMessage
-    try {
-      message = JSON.parse(line)
-    } catch {
-      this.#write({
-        jsonrpc: '2.0',
-        id: null,
-        error: { code: RPC_ERROR.parse, message: 'parse error' },
-      })
-      return
-    }
-    void this.#dispatch(message)
-  }
-
-  async #dispatch(message: RpcMessage): Promise<void> {
+  // Dispatch one inbound message; `write` receives the response for a
+  // request and nothing for a notification (or a cancelled request).
+  async dispatch(message: RpcMessage, write: (message: object) => void): Promise<void> {
     // A response to a server-initiated request: this server never sends
     // requests (only notifications), so there is nothing to match it to.
     if (message.method === undefined) return
@@ -108,7 +96,7 @@ export class RpcConnection {
     const id = message.id
     const handler = this.#handlers.get(message.method)
     if (handler === undefined) {
-      this.#write({
+      write({
         jsonrpc: '2.0',
         id,
         error: { code: RPC_ERROR.methodNotFound, message: `method not found: ${message.method}` },
@@ -134,12 +122,12 @@ export class RpcConnection {
     try {
       const result = await handler(message.params, context)
       // The spec forbids answering a cancelled request.
-      if (!controller.signal.aborted) this.#write({ jsonrpc: '2.0', id, result })
+      if (!controller.signal.aborted) write({ jsonrpc: '2.0', id, result })
     } catch (error) {
       this.#log(`request ${String(message.method)} failed: ${String(error)}`)
       if (!controller.signal.aborted) {
         const code = error instanceof RpcError ? error.code : RPC_ERROR.internal
-        this.#write({
+        write({
           jsonrpc: '2.0',
           id,
           error: { code, message: error instanceof Error ? error.message : String(error) },
@@ -149,8 +137,26 @@ export class RpcConnection {
       this.#inflight.delete(id)
     }
   }
+}
 
-  #write(message: object): void {
-    this.#output.write(JSON.stringify(message) + '\n')
-  }
+// The MCP stdio wire: newline-delimited JSON-RPC over the given streams.
+export function bindStdio(router: RpcRouter, input: Readable, output: Writable): void {
+  const write = (message: object) => output.write(JSON.stringify(message) + '\n')
+  router.setNotifySink(write)
+  const lines = createInterface({ input, crlfDelay: Infinity })
+  lines.on('line', (line) => {
+    if (line.trim().length === 0) return
+    let message: RpcMessage
+    try {
+      message = JSON.parse(line)
+    } catch {
+      write({
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: RPC_ERROR.parse, message: 'parse error' },
+      })
+      return
+    }
+    void router.dispatch(message, write)
+  })
 }

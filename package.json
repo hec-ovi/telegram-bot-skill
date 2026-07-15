@@ -17,6 +17,7 @@
     "setup": "node src/setup.ts",
     "users": "node src/users.ts",
     "mcp": "node mcp/server.ts",
+    "mcp:http": "node mcp/server.ts --http 8765",
     "sync-skill": "node scripts/sync-skill.mjs",
     "test": "node --test \"src/**/*.test.ts\" \"mcp/**/*.test.ts\""
   }

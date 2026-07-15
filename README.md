@@ -101,12 +101,25 @@ Then tell your agent: *"set up the telegram bot"*. Plugin routes carry only the 
 
 ## Chat with your live session instead (MCP)
 
-`npm start` spawns a fresh headless agent per message. The MCP surface flips that: the coding session you already have open is the agent that answers, with its context, its tools, and its permission setup. The repo ships `.mcp.json`, so opening this folder in Claude Code (or pointing any MCP client at `node mcp/server.ts`) exposes the bridge as the `telegram` server. Same `.env`, same state file, same gate; strangers still wait at the door.
+`npm start` spawns a fresh headless agent per message. The MCP surface flips that: the coding session you already have open is the agent that answers, with its context, its tools, and its permission setup. Same `.env`, same state file, same gate; strangers still wait at the door.
 
-Two ways for messages to reach the agent:
+Two steps, like `npx skills add` but for a tool server:
 
-- **Pull, works in any MCP client.** The agent calls `wait_for_message` (blocking, queue-backed, nothing is lost while it works), answers with `send_message`, and calls `wait_for_message` again. Telling your agent "serve the telegram bridge" is enough; the tool descriptions carry the loop.
-- **Push, Claude Code v2.1.80+ (channels, research preview).** Add `--channel` to the server args in `.mcp.json` and start your session with `claude --dangerously-load-development-channels server:telegram`. Incoming messages now inject directly into the session as `<channel>` events: no polling, no blocked tool call, and they queue politely until the agent finishes what it is doing. Replies still go out through `send_message`. Two caveats: without that startup flag the notifications are dropped silently (Claude Code only listens to servers named in it), and messages sent while the very first consent dialog is still open can be missed; the server waits a 5-second grace period after the handshake before flushing, which covers the normal restart case.
+```bash
+# 1. serve the bridge over HTTP (stays up on this machine, binds 127.0.0.1)
+npm run mcp:http                          # port 8765; or: node mcp/server.ts --http <port>
+
+# 2. install it in your CLI by URL
+/mcp add telegram http://127.0.0.1:8765/mcp                              # noob-cli
+claude mcp add --transport http telegram http://127.0.0.1:8765/mcp      # Claude Code
+```
+
+Clients that spawn servers themselves skip step 1: the repo ships `.mcp.json`, so opening this folder in Claude Code (or pointing any stdio MCP client at `node mcp/server.ts`) exposes the bridge as the `telegram` server with zero setup. [noob-cli](https://github.com/hec-ovi/noob-cli) runs its agent in a container without node, which is exactly what the HTTP route is for.
+
+Once connected, telling the agent "serve the telegram bridge" is enough; the tool descriptions carry the loop. Two ways for messages to reach it:
+
+- **Pull, works in any MCP client (stdio and HTTP).** The agent calls `wait_for_message` (blocking, queue-backed, nothing is lost while it works), answers with `send_message`, and calls `wait_for_message` again.
+- **Push, Claude Code v2.1.80+ (channels, research preview, stdio only).** Add `--channel` to the server args in `.mcp.json` and start your session with `claude --dangerously-load-development-channels server:telegram`. Incoming messages now inject directly into the session as `<channel>` events: no polling, no blocked tool call, and they queue politely until the agent finishes what it is doing. Replies still go out through `send_message`. Two caveats: without that startup flag the notifications are dropped silently (Claude Code only listens to servers named in it), and messages sent while the very first consent dialog is still open can be missed; the server waits a 5-second grace period after the handshake before flushing, which covers the normal restart case.
 
 The extra tools work in both modes: `list_users`, `set_user_tier`, and `bridge_status` (which carries the claim link while the bot is unclaimed) manage the whitelist without leaving the session. One rule stands: one bot token allows exactly one poller, so stop `npm start` / `npm run bg` before using the MCP surface, and vice versa.
 
@@ -133,7 +146,7 @@ Each module is isolated behind an explicit in/out contract (full detail in [ARCH
 | `src/store` | flat JSON state, atomic writes, no database | ✅ |
 | `src/runner` | per-chat queue, session resume, capability refusal | ✅ |
 | `src/qr` | zero-dep QR encoder for the claim link (byte mode, EC L, v1-6) | ✅ |
-| `mcp/` | MCP server: your live session answers, pull or push (channels) | ✅ |
+| `mcp/` | MCP server: your live session answers, stdio or HTTP, pull or push (channels) | ✅ |
 | `src/policy` | tier to harness-config mapping (settings, hooks, flags) | 🔜 next |
 
 ## Roadmap
@@ -156,7 +169,7 @@ Full plan with the reasoning per phase: [ROADMAP.md](ROADMAP.md).
 npm test
 ```
 
-83 tests on Node's built-in runner: the Telegram client is exercised end to end against a real local `node:http` fake of the Bot API (long-poll holds, flood control, offset resume), the Claude Code and Pi adapters against scripted fake binaries, the QR encoder against the canonical Reed-Solomon vector plus a golden matrix that was cross-verified with an independent decoder (OpenCV), the whole bot through a full simulated conversation (claim, stranger knocks, forged approval rejected, owner approves, agent answers with live status, session resumes, troll blocked), and the MCP server as a spawned process speaking real JSON-RPC over stdio: handshake, both duplex modes, gate holds, cancellation, tier tools.
+87 tests on Node's built-in runner: the Telegram client is exercised end to end against a real local `node:http` fake of the Bot API (long-poll holds, flood control, offset resume), the Claude Code and Pi adapters against scripted fake binaries, the QR encoder against the canonical Reed-Solomon vector plus a golden matrix that was cross-verified with an independent decoder (OpenCV), the whole bot through a full simulated conversation (claim, stranger knocks, forged approval rejected, owner approves, agent answers with live status, session resumes, troll blocked), and the MCP server as a spawned process on both transports: real JSON-RPC over stdio (handshake, both duplex modes, gate holds, cancellation, tier tools) and plain POSTs against the HTTP listener (initialize round-trip, 202 notifications, a full message-in/answer-out loop against the fake Bot API, typed refusals for GET/garbage/batches).
 
 ## Why zero dependencies
 
@@ -173,7 +186,7 @@ src/
   qr/         claim-link QR, rendered in the terminal
   app.ts      wiring, bot.ts: entry, daemon.ts: bg control
   setup.ts    token wizard, users.ts: whitelist management
-mcp/          MCP server: rpc.ts wire, bridge.ts glue, server.ts entry
+mcp/          MCP server: rpc.ts dispatch + stdio wire, http.ts listener, bridge.ts glue, server.ts entry
 examples/
   pi-gemma/   docker rig: Pi + llama.cpp local model end to end
 plugins/      claude code and codex plugin packaging

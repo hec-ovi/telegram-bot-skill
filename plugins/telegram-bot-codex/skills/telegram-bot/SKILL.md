@@ -102,7 +102,7 @@ BOT_NAME="My Agent" BOT_DESCRIPTION="What this bot does" BOT_ABOUT="short profil
 
 ## Optional: answer from this session instead (MCP)
 
-`npm run bg` spawns a fresh headless agent per message. The alternative surface: this very session answers, through the repo's `.mcp.json` (server `telegram`). Stop any running bridge first (`npm run stop`; one token allows one poller), make sure your harness loaded the MCP server, then serve: call `wait_for_message`, do what the returned message asks, answer with `send_message` to the same chat_id, repeat. `bridge_status` has the claim link while the bot is unclaimed; `list_users` / `set_user_tier` manage access. Push mode (messages inject themselves, no wait loop) exists for Claude Code v2.1.80+; see the README's MCP section.
+`npm run bg` spawns a fresh headless agent per message. The alternative surface: this very session answers. Two routes: your harness spawns the server itself through the repo's `.mcp.json` (server `telegram`, stdio), or you start `npm run mcp:http` once and install it by URL (`/mcp add telegram http://127.0.0.1:8765/mcp` in noob-cli, `claude mcp add --transport http telegram http://127.0.0.1:8765/mcp` in Claude Code). Stop any running bridge first (`npm run stop`; one token allows one poller), then serve: call `wait_for_message`, do what the returned message asks, answer with `send_message` to the same chat_id, repeat. `bridge_status` has the claim link while the bot is unclaimed; `list_users` / `set_user_tier` manage access. Push mode (messages inject themselves, no wait loop) exists for Claude Code v2.1.80+; see the README's MCP section.
 
 ## If something fails
 

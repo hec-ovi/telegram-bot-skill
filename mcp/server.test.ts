@@ -375,3 +375,166 @@ test('protocol errors: unknown tool and unknown method', async (t) => {
     (error: Error & { code?: number }) => error.code === -32601,
   )
 })
+
+// ------------------------------------------------------------- http mode --
+
+interface HttpRig {
+  fake: FakeBotApi
+  base: string
+}
+
+async function startHttpRig(
+  t: { after: (fn: () => Promise<void> | void) => void },
+  extraArgs: string[] = [],
+): Promise<HttpRig> {
+  const fake = new FakeBotApi()
+  await fake.start()
+  const dir = await mkdtemp(join(tmpdir(), 'mcp-http-test-'))
+  const child = spawn(process.execPath, [SERVER, '--http', '0', ...extraArgs], {
+    env: {
+      ...process.env,
+      TELEGRAM_BOT_TOKEN: fake.token,
+      TELEGRAM_API_BASE: fake.baseUrl,
+      STATE_FILE: join(dir, 'state.json'),
+      ENV_FILE: join(dir, 'no.env'),
+      OWNER_ID: String(OWNER),
+    },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+  let stderr = ''
+  child.stderr.on('data', (chunk) => (stderr += String(chunk)))
+  t.after(async () => {
+    child.kill()
+    await fake.stop()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const base = await until(() => {
+    const match = stderr.match(/http:\/\/127\.0\.0\.1:(\d+)\/mcp/)
+    return match === null ? undefined : `http://127.0.0.1:${match[1]}/mcp`
+  }, 'the http listener to announce its port')
+  return { fake, base }
+}
+
+async function post(base: string, payload: unknown): Promise<{ status: number; body: any }> {
+  const response = await fetch(base, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const text = await response.text()
+  return { status: response.status, body: text.length > 0 ? JSON.parse(text) : undefined }
+}
+
+test('http: initialize round-trip, 202 notifications, tools work over plain POSTs', async (t) => {
+  const { fake, base } = await startHttpRig(t)
+
+  const init = await post(base, {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'http-test' } },
+  })
+  assert.equal(init.status, 200)
+  assert.equal(init.body.result.protocolVersion, '2025-06-18')
+  assert.equal(init.body.result.serverInfo.name, 'telegram-bot-skill')
+
+  const note = await post(base, { jsonrpc: '2.0', method: 'notifications/initialized' })
+  assert.equal(note.status, 202)
+  assert.equal(note.body, undefined)
+
+  const list = await post(base, { jsonrpc: '2.0', id: 2, method: 'tools/list' })
+  assert.equal(list.status, 200)
+  const names = list.body.result.tools.map((tool: any) => tool.name).sort()
+  assert.deepEqual(names, ['bridge_status', 'list_users', 'send_message', 'set_user_tier', 'wait_for_message'])
+  // The http default wait is capped under common per-call client timeouts.
+  const wait = list.body.result.tools.find((tool: any) => tool.name === 'wait_for_message')
+  assert.ok(wait.inputSchema.properties.timeout_seconds.description.includes('Default 25'))
+
+  // A full tool round-trip against the fake Bot API: message in, answer out.
+  fake.pushTextMessage({ chatId: OWNER, userId: OWNER, text: 'ping over http' })
+  const incoming = await post(base, {
+    jsonrpc: '2.0',
+    id: 3,
+    method: 'tools/call',
+    params: { name: 'wait_for_message', arguments: { timeout_seconds: 10 } },
+  })
+  assert.equal(incoming.status, 200)
+  const message = JSON.parse(incoming.body.result.content[0].text)
+  assert.equal(message.text, 'ping over http')
+  assert.equal(message.tier, 'owner')
+
+  const sent = await post(base, {
+    jsonrpc: '2.0',
+    id: 4,
+    method: 'tools/call',
+    params: { name: 'send_message', arguments: { chat_id: OWNER, text: 'pong over http' } },
+  })
+  assert.equal(sent.status, 200)
+  assert.equal(JSON.parse(sent.body.result.content[0].text).sent_chunks, 1)
+  const delivered = await until(
+    () => fake.callsFor('sendMessage').find((c) => c.params.text === 'pong over http'),
+    'the answer to reach the fake Bot API',
+  )
+  assert.equal(String(delivered.params.chat_id), String(OWNER))
+})
+
+test('http: a short wait returns timed_out instead of hanging the POST', async (t) => {
+  const { base } = await startHttpRig(t)
+  const result = await post(base, {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: { name: 'wait_for_message', arguments: { timeout_seconds: 1 } },
+  })
+  assert.equal(result.status, 200)
+  assert.equal(JSON.parse(result.body.result.content[0].text).timed_out, true)
+})
+
+test('http: transport misuse gets typed refusals, not crashes', async (t) => {
+  const { base } = await startHttpRig(t)
+
+  const got = await fetch(base) // GET: no server-initiated stream on offer
+  assert.equal(got.status, 405)
+  await got.text()
+
+  const garbage = await fetch(base, { method: 'POST', body: 'not json' })
+  assert.equal(garbage.status, 400)
+  assert.equal((await garbage.json()).error.code, -32700)
+
+  const batch = await post(base, [{ jsonrpc: '2.0', id: 1, method: 'ping' }])
+  assert.equal(batch.status, 400)
+  assert.equal(batch.body.error.code, -32602)
+
+  // Still serving after every refusal.
+  const ping = await post(base, { jsonrpc: '2.0', id: 2, method: 'ping' })
+  assert.equal(ping.status, 200)
+  assert.deepEqual(ping.body.result, {})
+})
+
+test('http: --channel is refused (channels ride the spawning client)', async (t) => {
+  const fake = new FakeBotApi()
+  await fake.start()
+  const dir = await mkdtemp(join(tmpdir(), 'mcp-http-test-'))
+  const child = spawn(process.execPath, [SERVER, '--http', '0', '--channel'], {
+    env: {
+      ...process.env,
+      TELEGRAM_BOT_TOKEN: fake.token,
+      TELEGRAM_API_BASE: fake.baseUrl,
+      STATE_FILE: join(dir, 'state.json'),
+      ENV_FILE: join(dir, 'no.env'),
+    },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+  let stderr = ''
+  child.stderr.on('data', (chunk) => (stderr += String(chunk)))
+  t.after(async () => {
+    child.kill()
+    await fake.stop()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const code = await new Promise<number | null>((resolvePromise) =>
+    child.once('exit', (exitCode) => resolvePromise(exitCode)),
+  )
+  assert.equal(code, 1)
+  assert.ok(stderr.includes('--http and --channel are exclusive'), stderr)
+})
