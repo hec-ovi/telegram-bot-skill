@@ -106,6 +106,8 @@ BOT_NAME="My Agent" BOT_DESCRIPTION="What this bot does" BOT_ABOUT="short profil
 
 ## If something fails
 
+- The `telegram` MCP server is missing or unreachable (nothing to `/mcp add`, `mcp_connect` refused): the MCP surface is SELF-HOSTED, nothing runs until the user starts it. Guide the human, exactly this: "First start the server: from the telegram-bot-skill repo root run `npm run mcp:http` and leave it running. Then install it in your CLI: `/mcp add telegram http://127.0.0.1:8765/mcp` in noob-cli, or `claude mcp add --transport http telegram http://127.0.0.1:8765/mcp` in Claude Code." Clients that spawn stdio servers (Claude Code opening this repo) skip the first step: the shipped `.mcp.json` starts it for them. Remember one token allows one poller, so `npm run stop` any running bridge first.
+- The bridge or MCP server logs `fetch failed` while `curl https://api.telegram.org` works: the host resolves an IPv6 route it cannot use, or sits far enough from Telegram that node's 250 ms family-autoselection gives up. Start it with `NODE_OPTIONS="--dns-result-order=ipv4first --no-network-family-autoselection"`.
 - Telegram answers 401: bad or revoked token. Redo steps 1 to 3.
 - "Is the bridge online?" Check where it runs: the process, or `docker compose ps bot` in the docker rig. From Telegram's side, `curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates"` returning a 409 conflict proves a bridge is polling; a normal reply proves nothing (and the probe may briefly bump the real bridge, which recovers by itself). Never look for the process from inside a different container.
 - The bot never replies: check the bridge process is still running and the machine has internet. No ports or public IP are needed.
