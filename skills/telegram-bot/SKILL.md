@@ -77,7 +77,6 @@ npm run bg
 
 It starts the bridge detached, waits until the claim link and QR appear, prints them, and RETURNS, so it never blocks your shell. `npm run status` checks on it, `npm run stop` stops it. It reads `.env` by itself, so the same command works after any reboot: no arguments, no reconfiguration, nothing to install (zero dependencies). Never start a second bridge while one is running: one token allows exactly one poller. (`npm start` is the same bridge in the foreground, for humans and process managers.)
 
-Docker rig note: inside the examples/pi-gemma container, `npm run bg` works but the bridge dies when your session's container exits. For the one that survives reboots, tell the human to run on the host: `docker compose up -d bot` (and stop any session bridge first).
 
 ## Step 5: hand over the claim link
 

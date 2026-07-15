@@ -67,14 +67,11 @@ First start prints a one-time claim link (`https://t.me/yourbot?start=...`) plus
 
 Recover mode means the state file is never precious: wipe it, redeploy, spin up a fresh machine, and a boot with `OWNER_ID` set comes up already owned and usable, no claim link. Env is the source of truth for the ids it names (a stale stored owner gets demoted to trusted).
 
-For a bot that outlives reboots, run it under something that restarts it: the [examples/pi-gemma](examples/pi-gemma) rig does this with `restart: unless-stopped` (a PC reboot brings it back listening, state intact); for bare `npm start`, use your process manager of choice (a systemd unit works fine).
+For a bot that outlives reboots, run `npm start` under your process manager of choice (a systemd unit with `Restart=always` works fine); state lives in the bot-state file, so a restart comes back listening with tiers intact.
 
 ### Fully local, no cloud
 
-The bridge is verified live on a local LLM, two ways:
-
-- **MCP** lane: [noob-cli](https://github.com/hec-ovi/noob-cli) driving qwen3.6-35b on a llama.cpp server served this bridge over the Streamable HTTP transport (`npm run mcp:http`, then `/mcp add telegram http://127.0.0.1:8765/mcp`), answering phone messages from the live terminal session while it kept doing other work.
-- Spawn lane: [examples/pi-gemma](examples/pi-gemma) brings up the whole thing with one compose file and one `.env`: llama.cpp on Vulkan serving your GGUF, the [Pi coding agent](https://github.com/earendil-works/pi) wired to it, the bridge on top.
+The bridge is verified live on a local LLM: [noob-cli](https://github.com/hec-ovi/noob-cli) driving qwen3.6-35b on a llama.cpp server served this bridge over the Streamable HTTP transport (`npm run mcp:http`, then `/mcp add telegram http://127.0.0.1:8765/mcp`), answering phone messages from the live terminal session while it kept doing other work. The spawn lane runs local too: set `AGENT_ADAPTER=pi` and point `PI_MODEL` at any llama.cpp / OpenAI-compatible server.
 
 Small local models are the floor on purpose, and everything is verified against the floor. A stronger CLI (Claude Code, Codex, opencode, Hermes) on a bigger model has strictly more capability behind the same bridge, never less.
 
@@ -196,7 +193,6 @@ src/
   setup.ts    token wizard, users.ts: whitelist management
 mcp/          MCP server: rpc.ts dispatch + stdio wire, http.ts listener, bridge.ts glue, server.ts entry
 examples/
-  pi-gemma/   docker rig: Pi + llama.cpp local model end to end
 plugins/      claude code and codex plugin packaging
 ```
 

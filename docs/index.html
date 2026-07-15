@@ -249,10 +249,10 @@ const NODES = [
   {
     id:'more', x:1105, y:470, w:220, h:80, kind:'agent', color:'#e0a84a', status:'planned',
     title:'more adapters', note:'opencode · codex · gemini',
-    desc:'Phase 8. Same contract: run({prompt, sessionId, cwd, policy}) returning a stream of AgentEvents, plus an honest capability declaration. A docker rig for Pi + a local llama.cpp model already lives in examples/pi-gemma.',
+    desc:'Phase 8. Same contract: run({prompt, sessionId, cwd, policy}) returning a stream of AgentEvents, plus an honest capability declaration. Point PI_MODEL at any llama.cpp / OpenAI-compatible server for a fully local run.',
     in:'the same contract',
     out:'the same events',
-    src:['src/agents/contract.ts','examples/pi-gemma/README.md']
+    src:['src/agents/contract.ts']
   },
   {
     id:'mcp', x:300, y:70, w:190, h:96, kind:'surface', color:'#9d7bd8', status:'live',

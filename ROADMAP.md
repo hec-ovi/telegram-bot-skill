@@ -47,7 +47,7 @@ All shipped 2026-07-09. `src/qr` is our own zero-dep encoder (byte mode, EC leve
 
 ## Phase 8: more adapters (Pi shipped early)
 
-The Pi coding agent adapter already shipped (2026-07-09): `pi --mode json -p` with file-based session resume via `--session <path>`, flags verified against pi 0.80.3, plus a Docker test rig (`examples/pi-gemma`) that runs the whole bridge on a local llama.cpp model. Pi's `--tools` / `--exclude-tools` flags are the phase 6 path to hard gating for it.
+The Pi coding agent adapter already shipped (2026-07-09): `pi --mode json -p` with file-based session resume via `--session <path>`, flags verified against pi 0.80.3. Pi's `--tools` / `--exclude-tools` flags are the phase 6 path to hard gating for it.
 Still to come: opencode (`opencode run` plus the `opencode.json` permissions block; verify the reported SDK deny-rule bug does not affect the config path before trusting it as hard gating), Codex CLI (`codex exec --json`, session resume), Gemini CLI. `docs/ADAPTERS.md`: how to write an adapter, how to declare capabilities honestly.
 
 ## Phase 9: hardening
