@@ -256,11 +256,11 @@ const NODES = [
   },
   {
     id:'mcp', x:300, y:70, w:190, h:96, kind:'surface', color:'#9d7bd8', status:'live',
-    title:'mcp/', note:'session-as-agent · pull + push',
-    desc:'The MCP surface: a zero-dep JSON-RPC server over stdio that hands gate-approved messages to the connected MCP client, so your live coding session answers instead of a spawned CLI. Pull: a blocking wait_for_message loop, queue-backed. Push: Claude Code channels (research preview) inject messages as <channel> events. Plus send_message, list_users, set_user_tier, bridge_status.',
+    title:'mcp/', note:'session-as-agent · stdio + HTTP',
+    desc:'The MCP surface: a zero-dep JSON-RPC router bound to stdio or Streamable HTTP (one message per POST, 127.0.0.1) that hands gate-approved messages to the connected MCP client, so your live coding session answers instead of a spawned CLI. Pull: a blocking wait_for_message loop, queue-backed. Push: Claude Code channels (research preview) inject messages as <channel> events. Plus send_message, list_users, set_user_tier, bridge_status.',
     in:'gate-approved message + tier (createBot onRun hook)',
     out:'tool results · notifications/claude/channel · replies via send_message',
-    src:['mcp/server.ts','mcp/bridge.ts','mcp/rpc.ts'], test:['mcp/server.test.ts']
+    src:['mcp/server.ts','mcp/http.ts','mcp/bridge.ts','mcp/rpc.ts'], test:['mcp/server.test.ts']
   },
 ];
 

@@ -8,14 +8,15 @@
   <img src="https://img.shields.io/badge/Status-usable_·_phase_6_next-orange" alt="Status" />
   <img src="https://img.shields.io/badge/Dependencies-0-success" alt="Zero dependencies" />
   <img src="https://img.shields.io/badge/Node-%3E%3D22.18-339933?logo=nodedotjs&logoColor=white" alt="Node >= 22.18" />
-  <img src="https://img.shields.io/badge/Tests-83_passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-87_passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT" />
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Telegram-official_Bot_API-26A5E4?logo=telegram&logoColor=white" alt="Telegram Bot API" />
   <img src="https://img.shields.io/badge/Adapters-Claude_Code_·_Pi-D97757?logo=anthropic&logoColor=white" alt="Adapters" />
-  <img src="https://img.shields.io/badge/Local_models-Pi_+_llama.cpp-8A2BE2" alt="Local models" />
+  <img src="https://img.shields.io/badge/Local_models-noob--cli_·_Pi_·_llama.cpp-8A2BE2" alt="Local models" />
+  <img src="https://img.shields.io/badge/MCP-stdio_·_HTTP-9d7bd8" alt="MCP transports" />
   <img src="https://img.shields.io/badge/opencode_·_Codex_·_Gemini-planned-lightgrey" alt="More adapters planned" />
   <img src="https://img.shields.io/badge/TypeScript-native,_no_build-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
 </p>
@@ -25,6 +26,8 @@
 ## What this is
 
 A bridge, not an agent. Telegram messages go in, your local agent's answers come out, and every security decision on the way happens in deterministic code before any model sees a byte. It speaks the official Bot API directly over Node's built-in `fetch`: no framework, no wrapper, an empty dependency tree.
+
+One repo, three surfaces: an installable **skill** (an open SKILL.md any CLI agent can follow), the npm **toolkit** behind it (the `setup` / `users` / daemon **tooling** the skill drives), and an **MCP** server, stdio or Streamable HTTP, that makes your live session the agent that answers. All of it is tested against a local LLM, not just cloud models.
 
 It exists to fix the three things that make agent-over-chat setups painful:
 
@@ -68,7 +71,12 @@ For a bot that outlives reboots, run it under something that restarts it: the [e
 
 ### Fully local, no cloud
 
-The same bridge runs on a local model: the [Pi coding agent](https://github.com/earendil-works/pi) against any llama.cpp / OpenAI-compatible server. [examples/pi-gemma](examples/pi-gemma) brings up the whole thing with one compose file and one `.env`: llama.cpp on Vulkan serving your GGUF, Pi wired to it, the bridge on top. That rig is the project's reference test bench on purpose: a small local model driven by a tiny CLI is the floor, and everything is verified against the floor. A stronger CLI (Claude Code, Codex, opencode, Hermes) on a bigger model has strictly more capability behind the same bridge, never less.
+The bridge is verified live on a local LLM, two ways:
+
+- **MCP** lane: [noob-cli](https://github.com/hec-ovi/noob-cli) driving qwen3.6-35b on a llama.cpp server served this bridge over the Streamable HTTP transport (`npm run mcp:http`, then `/mcp add telegram http://127.0.0.1:8765/mcp`), answering phone messages from the live terminal session while it kept doing other work.
+- Spawn lane: [examples/pi-gemma](examples/pi-gemma) brings up the whole thing with one compose file and one `.env`: llama.cpp on Vulkan serving your GGUF, the [Pi coding agent](https://github.com/earendil-works/pi) wired to it, the bridge on top.
+
+Small local models are the floor on purpose, and everything is verified against the floor. A stronger CLI (Claude Code, Codex, opencode, Hermes) on a bigger model has strictly more capability behind the same bridge, never less.
 
 ### No token yet?
 
@@ -159,7 +167,7 @@ Each module is isolated behind an explicit in/out contract (full detail in [ARCH
 | 8 | more adapters: Pi shipped with a local-model rig; opencode, Codex, Gemini pending | 🟡 partial |
 | 9 | hardening: rate limits, audit log, token hygiene | ⬜ |
 | 10 | packaging: skill install routes, npm publish | ⬜ |
-| 11 | MCP surface: session-as-agent, pull + push (channels) | ✅ |
+| 11 | MCP surface: session-as-agent, stdio + HTTP, pull + push (channels) | ✅ |
 
 Full plan with the reasoning per phase: [ROADMAP.md](ROADMAP.md).
 
