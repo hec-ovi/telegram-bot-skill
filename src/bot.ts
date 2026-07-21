@@ -5,7 +5,7 @@
 //   AGENT_ADAPTER       optional: claude-code (default) | pi
 //   PI_MODEL            optional, pi model ref, e.g. local/gemma-4-26b
 //   PI_SESSION_DIR      optional, where pi session files live
-//   OWNER_ID            optional, numeric Telegram id seeded as owner (recover mode)
+//   OWNER_ID            optional, comma-separated ids seeded as owner (recover mode)
 //   TRUSTED_IDS         optional, comma-separated ids seeded as trusted
 //   GUEST_IDS           optional, comma-separated ids seeded as guest
 //   BLOCKED_IDS         optional, comma-separated ids seeded as blocked
@@ -43,9 +43,9 @@ if (adapterName === 'claude-code') {
   process.exit(1)
 }
 
-const ownerId = parseIds(process.env.OWNER_ID)?.[0]
+const ownerIds = parseIds(process.env.OWNER_ID)
 const seed: SeedUsers = {
-  ownerId,
+  ownerIds,
   trusted: parseIds(process.env.TRUSTED_IDS),
   guest: parseIds(process.env.GUEST_IDS),
   blocked: parseIds(process.env.BLOCKED_IDS),

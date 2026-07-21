@@ -60,9 +60,9 @@ if (httpMode && (!Number.isInteger(httpPort) || httpPort < 0 || httpPort > 65535
 const stateFileEnv = process.env.STATE_FILE ?? 'bot-state.json'
 const stateFile = isAbsolute(stateFileEnv) ? stateFileEnv : join(repoRoot, stateFileEnv)
 
-const ownerId = parseIds(process.env.OWNER_ID)?.[0]
+const ownerIds = parseIds(process.env.OWNER_ID)
 const seed: SeedUsers = {
-  ownerId,
+  ownerIds,
   trusted: parseIds(process.env.TRUSTED_IDS),
   guest: parseIds(process.env.GUEST_IDS),
   blocked: parseIds(process.env.BLOCKED_IDS),

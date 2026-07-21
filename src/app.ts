@@ -17,7 +17,7 @@ import type { IncomingMessage, Update } from './telegram/types.ts'
 // machine or wiped state file comes up already owned and usable, no claim
 // dance. Env is the source of truth for the ids it names.
 export interface SeedUsers {
-  ownerId?: number
+  ownerIds?: number[]
   trusted?: number[]
   guest?: number[]
   blocked?: number[]
@@ -70,6 +70,9 @@ export function createBot(deps: BotDeps) {
   const findOwner = (): UserRecord | undefined =>
     Object.values(deps.store.data.users).find((user) => user.state === 'owner')
 
+  const owners = (): UserRecord[] =>
+    Object.values(deps.store.data.users).filter((user) => user.state === 'owner')
+
   const nameOf = (message: IncomingMessage): string | undefined =>
     message.kind === 'text' ? message.name : undefined
 
@@ -88,16 +91,18 @@ export function createBot(deps: BotDeps) {
             addedAt: existing?.addedAt ?? new Date().toISOString(),
           }
         }
-        if (seed.ownerId !== undefined) {
+        if (seed.ownerIds !== undefined && seed.ownerIds.length > 0) {
+          const ownerIdSet = new Set(seed.ownerIds)
           for (const [id, user] of Object.entries(data.users)) {
-            if (user.state === 'owner' && Number(id) !== seed.ownerId) user.state = 'trusted'
+            if (user.state === 'owner' && !ownerIdSet.has(Number(id))) user.state = 'trusted'
           }
-          upsert(seed.ownerId, 'owner')
+          for (const id of seed.ownerIds) upsert(id, 'owner')
           delete data.claimCode
         }
-        for (const id of seed.trusted ?? []) if (id !== seed.ownerId) upsert(id, 'trusted')
-        for (const id of seed.guest ?? []) if (id !== seed.ownerId) upsert(id, 'guest')
-        for (const id of seed.blocked ?? []) if (id !== seed.ownerId) upsert(id, 'blocked')
+        const isOwner = (id: number) => seed.ownerIds?.includes(id) ?? false
+        for (const id of seed.trusted ?? []) if (!isOwner(id)) upsert(id, 'trusted')
+        for (const id of seed.guest ?? []) if (!isOwner(id)) upsert(id, 'guest')
+        for (const id of seed.blocked ?? []) if (!isOwner(id)) upsert(id, 'blocked')
       })
     }
     if (findOwner() === undefined) {
@@ -160,8 +165,7 @@ export function createBot(deps: BotDeps) {
           }
         })
         await send(message.chatId, TEXT.pending)
-        const owner = findOwner()
-        if (owner !== undefined) {
+        for (const owner of owners()) {
           await deps.api.sendMessage({
             chat_id: owner.chatId,
             text: `👤 ${nameOf(message) ?? 'someone'} (id ${message.userId}) asks for access.`,

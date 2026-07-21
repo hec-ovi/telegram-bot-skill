@@ -190,9 +190,11 @@ export class TelegramBridge {
   }
 
   // Same power as the owner's inline approve buttons, exposed as a tool.
-  // The owner tier itself is untouchable from here: no owner demotion, no
-  // second owner. Unknown ids are upserted like env seeding does (a private
-  // chat id equals the user id, which is all a notification needs).
+  // The owner tier itself is untouchable from here: no demoting an owner,
+  // no minting a new one (that stays a terminal-only action, via `npm run
+  // users -- set <id> owner` or OWNER_ID seeding). Unknown ids are upserted
+  // like env seeding does (a private chat id equals the user id, which is
+  // all a notification needs).
   async setUserTier(userId: number, tier: 'trusted' | 'guest' | 'blocked'): Promise<void> {
     const existing = this.#store.data.users[String(userId)]
     if (existing?.state === 'owner') {

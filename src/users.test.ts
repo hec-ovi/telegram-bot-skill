@@ -29,7 +29,7 @@ function runUsers(
   })
 }
 
-test('users cli: set, list, owner handover, remove', async () => {
+test('users cli: set, list, add a second owner, remove', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'users-'))
   const stateFile = join(dir, 'state.json')
   try {
@@ -51,12 +51,12 @@ test('users cli: set, list, owner handover, remove', async () => {
     assert.match(list.output, /100 {2}owner/)
     assert.match(list.output, /200 {2}trusted/)
 
-    // Owner handover demotes the previous owner and kills any claim code.
-    const handover = await runUsers(['set', '200', 'owner'], stateFile)
-    assert.equal(handover.code, 0, handover.output)
+    // Adding a second owner keeps the first as owner too, and kills any claim code.
+    const addOwner = await runUsers(['set', '200', 'owner'], stateFile)
+    assert.equal(addOwner.code, 0, addOwner.output)
     const state = JSON.parse(readFileSync(stateFile, 'utf8'))
     assert.equal(state.users['200'].state, 'owner')
-    assert.equal(state.users['100'].state, 'trusted')
+    assert.equal(state.users['100'].state, 'owner')
     assert.equal(state.claimCode, undefined)
 
     const removed = await runUsers(['remove', '100'], stateFile)

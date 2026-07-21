@@ -147,7 +147,7 @@ test('recover mode: env seed makes a fresh, stateless boot immediately owned and
       store,
       adapter,
       cwd: dir,
-      seed: { ownerId: OWNER, trusted: [FRIEND], blocked: [TROLL] },
+      seed: { ownerIds: [OWNER], trusted: [FRIEND], blocked: [TROLL] },
       log: (line) => logs.push(line),
       presence: { typingIntervalMs: 100000, editThrottleMs: 0 },
     })
@@ -193,12 +193,65 @@ test('recover mode: the env owner wins over a stale stored owner', async () => {
       store,
       adapter: new FakeAdapter([]),
       cwd: dir,
-      seed: { ownerId: OWNER },
+      seed: { ownerIds: [OWNER] },
     })
     await bot.bootstrap()
     assert.equal(store.data.users[String(OWNER)].state, 'owner')
     assert.equal(store.data.users['999'].state, 'trusted', 'old owner demoted, not deleted')
   } finally {
+    await fake.stop()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('multiple seeded owners coexist, and both get the approval keyboard', async () => {
+  const fake = new FakeBotApi()
+  await fake.start()
+  const CO_OWNER = 150
+  const dir = mkdtempSync(join(tmpdir(), 'bot-multi-owner-'))
+  const controller = new AbortController()
+  try {
+    const api = new TelegramApi(fake.token, { baseUrl: fake.baseUrl })
+    const store = await FileStore.open(join(dir, 'state.json'))
+    await store.update((data) => {
+      data.users['999'] = { state: 'owner', chatId: 999, addedAt: 'x' }
+    })
+    const adapter = new FakeAdapter([
+      { kind: 'text', text: 'answer' },
+      { kind: 'done', sessionId: 's1' },
+    ])
+    const bot = createBot({
+      api,
+      store,
+      adapter,
+      cwd: dir,
+      seed: { ownerIds: [OWNER, CO_OWNER] },
+      presence: { typingIntervalMs: 100000, editThrottleMs: 0 },
+    })
+    await bot.bootstrap()
+
+    // Both seeded ids are owners; the stale one not in the list is demoted.
+    assert.equal(store.data.users[String(OWNER)].state, 'owner')
+    assert.equal(store.data.users[String(CO_OWNER)].state, 'owner')
+    assert.equal(store.data.users['999'].state, 'trusted')
+
+    const loop = bot.runLoop(controller.signal)
+
+    // A stranger's request goes to every owner, not just one.
+    fake.pushTextMessage({ chatId: FRIEND, userId: FRIEND, text: 'let me in?' })
+    await wait(60)
+    const keyboards = fake
+      .callsFor('sendMessage')
+      .filter((call) => call.params.reply_markup !== undefined)
+      .map((call) => call.params.chat_id)
+    assert.deepEqual(new Set(keyboards), new Set([OWNER, CO_OWNER]))
+
+    // The co-owner runs the agent too, same as the primary owner.
+    fake.pushTextMessage({ chatId: CO_OWNER, userId: CO_OWNER, text: 'hi' })
+    await wait(80)
+    assert.equal(adapter.runs.length, 1)
+  } finally {
+    controller.abort()
     await fake.stop()
     rmSync(dir, { recursive: true, force: true })
   }

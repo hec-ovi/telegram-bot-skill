@@ -45,12 +45,8 @@ if (command === 'list') {
       name: existing?.name,
       addedAt: existing?.addedAt ?? new Date().toISOString(),
     }
-    if (tier === 'owner') {
-      for (const [otherId, user] of Object.entries(data.users)) {
-        if (user.state === 'owner' && otherId !== String(id)) user.state = 'trusted'
-      }
-      delete data.claimCode
-    }
+    // Multiple owners can coexist: setting a new one does not demote existing owners.
+    if (tier === 'owner') delete data.claimCode
   })
   console.log(`${id} is now ${tier}.`)
   console.log(RESTART_HINT)
